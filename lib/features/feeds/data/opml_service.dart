@@ -21,14 +21,16 @@ class OpmlService {
     final document = XmlDocument.parse(opml);
     final items = <OpmlImportItem>[];
 
-    for (final outline in document.descendantElements.where((node) => node.name.local == 'outline')) {
+    for (final outline in document.descendantElements
+        .where((node) => node.name.local == 'outline')) {
       final url = outline.getAttribute('xmlUrl') ?? outline.getAttribute('url');
       if (url == null || url.trim().isEmpty) continue;
       items.add(
         OpmlImportItem(
           url: url.trim(),
           title: outline.getAttribute('title') ?? outline.getAttribute('text'),
-          category: outline.parentElement?.getAttribute('title') ?? outline.parentElement?.getAttribute('text'),
+          category: outline.parentElement?.getAttribute('title') ??
+              outline.parentElement?.getAttribute('text'),
         ),
       );
     }
@@ -55,7 +57,8 @@ class OpmlService {
           grouped.putIfAbsent(feed.category, () => []).add(feed);
         }
         for (final entry in grouped.entries) {
-          builder.element('outline', attributes: {'text': entry.key, 'title': entry.key}, nest: () {
+          builder.element('outline',
+              attributes: {'text': entry.key, 'title': entry.key}, nest: () {
             for (final feed in entry.value) {
               builder.element('outline', attributes: {
                 'type': 'rss',

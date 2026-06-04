@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database_provider.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/network/dio_provider.dart';
 import '../../../core/sync/sync_repository.dart';
 import '../data/settings_repository.dart';
@@ -14,7 +15,8 @@ final syncRepositoryProvider = Provider<SyncRepository>((ref) {
   return SyncRepository(ref.watch(appDatabaseProvider), ref.watch(dioProvider));
 });
 
-final settingsControllerProvider = StateNotifierProvider<SettingsController, SettingsState>((ref) {
+final settingsControllerProvider =
+    StateNotifierProvider<SettingsController, SettingsState>((ref) {
   return SettingsController(
     ref.watch(settingsRepositoryProvider),
     ref.watch(syncRepositoryProvider),
@@ -24,6 +26,7 @@ final settingsControllerProvider = StateNotifierProvider<SettingsController, Set
 class SettingsState {
   const SettingsState({
     this.themeMode = ThemeMode.system,
+    this.languageMode = LanguageMode.system,
     this.fontSize = 16,
     this.refreshMinutes = 60,
     this.aiEnabled = true,
@@ -34,6 +37,7 @@ class SettingsState {
   });
 
   final ThemeMode themeMode;
+  final LanguageMode languageMode;
   final double fontSize;
   final int refreshMinutes;
   final bool aiEnabled;
@@ -44,6 +48,7 @@ class SettingsState {
 
   SettingsState copyWith({
     ThemeMode? themeMode,
+    LanguageMode? languageMode,
     double? fontSize,
     int? refreshMinutes,
     bool? aiEnabled,
@@ -54,6 +59,7 @@ class SettingsState {
   }) {
     return SettingsState(
       themeMode: themeMode ?? this.themeMode,
+      languageMode: languageMode ?? this.languageMode,
       fontSize: fontSize ?? this.fontSize,
       refreshMinutes: refreshMinutes ?? this.refreshMinutes,
       aiEnabled: aiEnabled ?? this.aiEnabled,
@@ -66,7 +72,8 @@ class SettingsState {
 }
 
 class SettingsController extends StateNotifier<SettingsState> {
-  SettingsController(this._repository, this._syncRepository) : super(const SettingsState()) {
+  SettingsController(this._repository, this._syncRepository)
+      : super(const SettingsState()) {
     load();
   }
 
@@ -77,6 +84,7 @@ class SettingsController extends StateNotifier<SettingsState> {
     final settings = await _repository.getAll();
     state = SettingsState(
       themeMode: _parseTheme(settings['theme_mode']),
+      languageMode: _parseLanguage(settings['language_mode']),
       fontSize: double.tryParse(settings['font_size'] ?? '') ?? 16,
       refreshMinutes: int.tryParse(settings['refresh_minutes'] ?? '') ?? 60,
       aiEnabled: settings['ai_enabled'] != 'false',
@@ -90,6 +98,11 @@ class SettingsController extends StateNotifier<SettingsState> {
   Future<void> setThemeMode(ThemeMode mode) async {
     state = state.copyWith(themeMode: mode);
     await _repository.setValue('theme_mode', mode.name);
+  }
+
+  Future<void> setLanguageMode(LanguageMode mode) async {
+    state = state.copyWith(languageMode: mode);
+    await _repository.setValue('language_mode', mode.name);
   }
 
   Future<void> setFontSize(double size) async {
@@ -108,18 +121,21 @@ class SettingsController extends StateNotifier<SettingsState> {
   }
 
   Future<void> setApiBaseUrl(String baseUrl) async {
-    final value = baseUrl.trim().isEmpty ? 'http://localhost:8000' : baseUrl.trim();
+    final value =
+        baseUrl.trim().isEmpty ? 'http://localhost:8000' : baseUrl.trim();
     state = state.copyWith(apiBaseUrl: value);
     await _repository.setValue('api_base_url', value);
   }
 
   Future<void> login(String email, String password) async {
-    final token = await _syncRepository.login(baseUrl: state.apiBaseUrl, email: email, password: password);
+    final token = await _syncRepository.login(
+        baseUrl: state.apiBaseUrl, email: email, password: password);
     await _saveAccount(email, token);
   }
 
   Future<void> register(String email, String password) async {
-    final token = await _syncRepository.register(baseUrl: state.apiBaseUrl, email: email, password: password);
+    final token = await _syncRepository.register(
+        baseUrl: state.apiBaseUrl, email: email, password: password);
     await _saveAccount(email, token);
   }
 
@@ -151,6 +167,13 @@ class SettingsController extends StateNotifier<SettingsState> {
     return ThemeMode.values.firstWhere(
       (mode) => mode.name == value,
       orElse: () => ThemeMode.system,
+    );
+  }
+
+  LanguageMode _parseLanguage(String? value) {
+    return LanguageMode.values.firstWhere(
+      (mode) => mode.name == value,
+      orElse: () => LanguageMode.system,
     );
   }
 }

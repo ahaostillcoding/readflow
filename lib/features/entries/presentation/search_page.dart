@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/models/content_type.dart';
 import '../../categories/presentation/category_providers.dart';
 import 'content_flow_page.dart';
@@ -14,21 +15,23 @@ class SearchPage extends ConsumerWidget {
     final filter = ref.watch(searchEntryFilterProvider);
     final categories = ref.watch(categoryNamesProvider);
     final entries = ref.watch(entriesProvider(filter));
+    final t = context.t;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Search')),
+      appBar: AppBar(title: Text(t.search)),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
             child: TextField(
               autofocus: true,
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search all local content',
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: t.searchAllLocalContent,
               ),
               onChanged: (query) {
-                ref.read(searchEntryFilterProvider.notifier).state = filter.copyWith(query: query);
+                ref.read(searchEntryFilterProvider.notifier).state =
+                    filter.copyWith(query: query);
               },
             ),
           ),
@@ -39,24 +42,27 @@ class SearchPage extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 FilterChip(
-                  label: const Text('Favorites'),
+                  label: Text(t.favorites),
                   selected: filter.favoriteOnly,
                   onSelected: (value) {
-                    ref.read(searchEntryFilterProvider.notifier).state = filter.copyWith(favoriteOnly: value);
+                    ref.read(searchEntryFilterProvider.notifier).state =
+                        filter.copyWith(favoriteOnly: value);
                   },
                 ),
                 FilterChip(
-                  label: const Text('Read later'),
+                  label: Text(t.readLater),
                   selected: filter.laterOnly,
                   onSelected: (value) {
-                    ref.read(searchEntryFilterProvider.notifier).state = filter.copyWith(laterOnly: value);
+                    ref.read(searchEntryFilterProvider.notifier).state =
+                        filter.copyWith(laterOnly: value);
                   },
                 ),
                 FilterChip(
-                  label: const Text('Unread'),
+                  label: Text(t.unread),
                   selected: filter.unreadOnly,
                   onSelected: (value) {
-                    ref.read(searchEntryFilterProvider.notifier).state = filter.copyWith(unreadOnly: value);
+                    ref.read(searchEntryFilterProvider.notifier).state =
+                        filter.copyWith(unreadOnly: value);
                   },
                 ),
               ],
@@ -73,10 +79,11 @@ class SearchPage extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final category = all[index];
                     return ChoiceChip(
-                      label: Text(category),
+                      label: Text(t.categoryLabel(category)),
                       selected: filter.category == category,
                       onSelected: (_) {
-                        ref.read(searchEntryFilterProvider.notifier).state = filter.copyWith(category: category);
+                        ref.read(searchEntryFilterProvider.notifier).state =
+                            filter.copyWith(category: category);
                       },
                     );
                   },
@@ -85,7 +92,8 @@ class SearchPage extends ConsumerWidget {
                 );
               },
               loading: () => const Center(child: LinearProgressIndicator()),
-              error: (error, _) => Center(child: Text('Failed to load categories: $error')),
+              error: (error, _) =>
+                  Center(child: Text(t.failedToLoadCategories(error))),
             ),
           ),
           SizedBox(
@@ -97,10 +105,11 @@ class SearchPage extends ConsumerWidget {
                 final values = [null, ...ContentType.values];
                 final type = values[index];
                 return ChoiceChip(
-                  label: Text(type?.name ?? 'Any type'),
+                  label: Text(t.contentTypeLabel(type)),
                   selected: filter.contentType == type,
                   onSelected: (_) {
-                    ref.read(searchEntryFilterProvider.notifier).state = filter.copyWith(contentType: type);
+                    ref.read(searchEntryFilterProvider.notifier).state =
+                        filter.copyWith(contentType: type);
                   },
                 );
               },
@@ -110,9 +119,11 @@ class SearchPage extends ConsumerWidget {
           ),
           Expanded(
             child: entries.when(
-              data: (items) => items.isEmpty ? const Center(child: Text('No matching content.')) : EntryList(entries: items),
+              data: (items) => items.isEmpty
+                  ? Center(child: Text(t.noMatchingContent))
+                  : EntryList(entries: items),
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text('Search failed: $error')),
+              error: (error, _) => Center(child: Text(t.searchFailed(error))),
             ),
           ),
         ],

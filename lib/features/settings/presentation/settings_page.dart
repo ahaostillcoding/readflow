@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/app_database.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../entries/presentation/entry_providers.dart';
 import '../../feeds/data/opml_service.dart';
@@ -15,66 +16,93 @@ class SettingsPage extends ConsumerWidget {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
 
-  static const refreshOptions = <int, String>{
-    15: '15 minutes',
-    30: '30 minutes',
-    60: '1 hour',
-    180: '3 hours',
-    360: '6 hours',
-    720: '12 hours',
-    1440: 'Daily',
-  };
+  static const refreshOptions = [15, 30, 60, 180, 360, 720, 1440];
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final settings = ref.watch(settingsControllerProvider);
     if (_apiController.text.isEmpty) _apiController.text = settings.apiBaseUrl;
-    if (_emailController.text.isEmpty && (settings.accountEmail?.isNotEmpty ?? false)) {
+    if (_emailController.text.isEmpty &&
+        (settings.accountEmail?.isNotEmpty ?? false)) {
       _emailController.text = settings.accountEmail!;
     }
+    final t = context.t;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Settings')),
+      appBar: AppBar(title: Text(t.settings)),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
           DropdownButtonFormField<ThemeMode>(
             initialValue: settings.themeMode,
-            decoration: const InputDecoration(labelText: 'Appearance'),
-            items: const [
-              DropdownMenuItem(value: ThemeMode.system, child: Text('System')),
-              DropdownMenuItem(value: ThemeMode.light, child: Text('Light')),
-              DropdownMenuItem(value: ThemeMode.dark, child: Text('Dark')),
+            decoration: InputDecoration(labelText: t.appearance),
+            items: [
+              DropdownMenuItem(value: ThemeMode.system, child: Text(t.system)),
+              DropdownMenuItem(value: ThemeMode.light, child: Text(t.light)),
+              DropdownMenuItem(value: ThemeMode.dark, child: Text(t.dark)),
             ],
             onChanged: (value) {
-              if (value != null) ref.read(settingsControllerProvider.notifier).setThemeMode(value);
+              if (value != null) {
+                ref
+                    .read(settingsControllerProvider.notifier)
+                    .setThemeMode(value);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<LanguageMode>(
+            initialValue: settings.languageMode,
+            decoration: InputDecoration(labelText: t.language),
+            items: [
+              DropdownMenuItem(
+                  value: LanguageMode.system, child: Text(t.systemLanguage)),
+              DropdownMenuItem(value: LanguageMode.zh, child: Text(t.chinese)),
+              DropdownMenuItem(value: LanguageMode.en, child: Text(t.english)),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                ref
+                    .read(settingsControllerProvider.notifier)
+                    .setLanguageMode(value);
+              }
             },
           ),
           const SizedBox(height: 20),
-          Text('Reader font size: ${settings.fontSize.toStringAsFixed(0)}'),
+          Text(t.readerFontSize(settings.fontSize)),
           Slider(
             value: settings.fontSize,
             min: 14,
             max: 24,
             divisions: 10,
             label: settings.fontSize.toStringAsFixed(0),
-            onChanged: (value) => ref.read(settingsControllerProvider.notifier).setFontSize(value),
+            onChanged: (value) => ref
+                .read(settingsControllerProvider.notifier)
+                .setFontSize(value),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int>(
             initialValue: settings.refreshMinutes,
-            decoration: const InputDecoration(labelText: 'Refresh frequency'),
-            items: refreshOptions.entries.map((entry) => DropdownMenuItem(value: entry.key, child: Text(entry.value))).toList(),
+            decoration: InputDecoration(labelText: t.refreshFrequency),
+            items: refreshOptions
+                .map((minutes) => DropdownMenuItem(
+                    value: minutes, child: Text(t.refreshOption(minutes))))
+                .toList(),
             onChanged: (value) {
-              if (value != null) ref.read(settingsControllerProvider.notifier).setRefreshMinutes(value);
+              if (value != null) {
+                ref
+                    .read(settingsControllerProvider.notifier)
+                    .setRefreshMinutes(value);
+              }
             },
           ),
           const SizedBox(height: 12),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
-            title: const Text('AI summaries and tags'),
+            title: Text(t.aiSummariesAndTags),
             value: settings.aiEnabled,
-            onChanged: (value) => ref.read(settingsControllerProvider.notifier).setAiEnabled(value),
+            onChanged: (value) => ref
+                .read(settingsControllerProvider.notifier)
+                .setAiEnabled(value),
           ),
           const SizedBox(height: 20),
           Card(
@@ -83,40 +111,43 @@ class SettingsPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Sync account', style: Theme.of(context).textTheme.titleMedium),
+                  Text(t.syncAccount,
+                      style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _apiController,
-                    decoration: const InputDecoration(
-                      labelText: 'API base URL',
-                      prefixIcon: Icon(Icons.cloud_outlined),
+                    decoration: InputDecoration(
+                      labelText: t.apiBaseUrl,
+                      prefixIcon: const Icon(Icons.cloud_outlined),
                     ),
                     keyboardType: TextInputType.url,
-                    onSubmitted: (value) => ref.read(settingsControllerProvider.notifier).setApiBaseUrl(value),
+                    onSubmitted: (value) => ref
+                        .read(settingsControllerProvider.notifier)
+                        .setApiBaseUrl(value),
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _emailController,
-                    decoration: const InputDecoration(
-                      labelText: 'Email',
-                      prefixIcon: Icon(Icons.email_outlined),
+                    decoration: InputDecoration(
+                      labelText: t.email,
+                      prefixIcon: const Icon(Icons.email_outlined),
                     ),
                     keyboardType: TextInputType.emailAddress,
                   ),
                   const SizedBox(height: 12),
                   TextField(
                     controller: _passwordController,
-                    decoration: const InputDecoration(
-                      labelText: 'Password',
-                      prefixIcon: Icon(Icons.lock_outline),
+                    decoration: InputDecoration(
+                      labelText: t.password,
+                      prefixIcon: const Icon(Icons.lock_outline),
                     ),
                     obscureText: true,
                   ),
                   const SizedBox(height: 12),
                   Text(
                     (settings.authToken?.isNotEmpty ?? false)
-                        ? 'Signed in as ${settings.accountEmail}'
-                        : 'Not signed in',
+                        ? t.signedInAs(settings.accountEmail)
+                        : t.notSignedIn,
                   ),
                   const SizedBox(height: 12),
                   Wrap(
@@ -126,24 +157,28 @@ class SettingsPage extends ConsumerWidget {
                       FilledButton.icon(
                         onPressed: () => _login(context, ref),
                         icon: const Icon(Icons.login),
-                        label: const Text('Login'),
+                        label: Text(t.login),
                       ),
                       OutlinedButton.icon(
                         onPressed: () => _register(context, ref),
                         icon: const Icon(Icons.person_add_alt),
-                        label: const Text('Register'),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: (settings.authToken?.isNotEmpty ?? false) ? () => _syncNow(context, ref) : null,
-                        icon: const Icon(Icons.sync),
-                        label: const Text('Sync now'),
+                        label: Text(t.register),
                       ),
                       OutlinedButton.icon(
                         onPressed: (settings.authToken?.isNotEmpty ?? false)
-                            ? () => ref.read(settingsControllerProvider.notifier).logout()
+                            ? () => _syncNow(context, ref)
+                            : null,
+                        icon: const Icon(Icons.sync),
+                        label: Text(t.syncNow),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: (settings.authToken?.isNotEmpty ?? false)
+                            ? () => ref
+                                .read(settingsControllerProvider.notifier)
+                                .logout()
                             : null,
                         icon: const Icon(Icons.logout),
-                        label: const Text('Logout'),
+                        label: Text(t.logout),
                       ),
                     ],
                   ),
@@ -159,21 +194,25 @@ class SettingsPage extends ConsumerWidget {
               OutlinedButton.icon(
                 onPressed: () => _importOpml(context, ref),
                 icon: const Icon(Icons.upload_file),
-                label: const Text('Import OPML'),
+                label: Text(t.importOpml),
               ),
               OutlinedButton.icon(
                 onPressed: () => _exportOpml(context, ref),
                 icon: const Icon(Icons.download),
-                label: const Text('Export OPML'),
+                label: Text(t.exportOpml),
               ),
               OutlinedButton.icon(
                 onPressed: () async {
-                  await ref.read(settingsControllerProvider.notifier).clearCache();
+                  await ref
+                      .read(settingsControllerProvider.notifier)
+                      .clearCache();
                   ref.invalidate(entriesProvider);
-                  if (context.mounted) showMessage(context, 'Article cache cleared');
+                  if (context.mounted) {
+                    showMessage(context, context.t.articleCacheCleared);
+                  }
                 },
                 icon: const Icon(Icons.cleaning_services),
-                label: const Text('Clear article cache'),
+                label: Text(t.clearArticleCache),
               ),
             ],
           ),
@@ -184,9 +223,11 @@ class SettingsPage extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Build commands', style: Theme.of(context).textTheme.titleMedium),
+                  Text(t.buildCommands,
+                      style: Theme.of(context).textTheme.titleMedium),
                   const SizedBox(height: 8),
-                  const SelectableText('Windows: flutter build windows\nAndroid: flutter build apk --release'),
+                  const SelectableText(
+                      'Windows: flutter build windows\nAndroid: flutter build apk --release'),
                 ],
               ),
             ),
@@ -197,32 +238,47 @@ class SettingsPage extends ConsumerWidget {
   }
 
   Future<void> _login(BuildContext context, WidgetRef ref) async {
-    await ref.read(settingsControllerProvider.notifier).setApiBaseUrl(_apiController.text);
+    await ref
+        .read(settingsControllerProvider.notifier)
+        .setApiBaseUrl(_apiController.text);
     try {
-      await ref.read(settingsControllerProvider.notifier).login(_emailController.text, _passwordController.text);
-      if (context.mounted) showMessage(context, 'Login complete');
+      await ref
+          .read(settingsControllerProvider.notifier)
+          .login(_emailController.text, _passwordController.text);
+      if (context.mounted) showMessage(context, context.t.loginComplete);
     } catch (error) {
-      if (context.mounted) showMessage(context, 'Login failed: $error');
+      if (context.mounted) showMessage(context, context.t.loginFailed(error));
     }
   }
 
   Future<void> _register(BuildContext context, WidgetRef ref) async {
-    await ref.read(settingsControllerProvider.notifier).setApiBaseUrl(_apiController.text);
+    await ref
+        .read(settingsControllerProvider.notifier)
+        .setApiBaseUrl(_apiController.text);
     try {
-      await ref.read(settingsControllerProvider.notifier).register(_emailController.text, _passwordController.text);
-      if (context.mounted) showMessage(context, 'Registration complete');
+      await ref
+          .read(settingsControllerProvider.notifier)
+          .register(_emailController.text, _passwordController.text);
+      if (context.mounted) showMessage(context, context.t.registrationComplete);
     } catch (error) {
-      if (context.mounted) showMessage(context, 'Registration failed: $error');
+      if (context.mounted) {
+        showMessage(context, context.t.registrationFailed(error));
+      }
     }
   }
 
   Future<void> _syncNow(BuildContext context, WidgetRef ref) async {
-    await ref.read(settingsControllerProvider.notifier).setApiBaseUrl(_apiController.text);
+    await ref
+        .read(settingsControllerProvider.notifier)
+        .setApiBaseUrl(_apiController.text);
     try {
-      final result = await ref.read(settingsControllerProvider.notifier).syncNow();
-      if (context.mounted) showMessage(context, 'Synced ${result.pushed} change(s), pulled ${result.pulled} event(s)');
+      final result =
+          await ref.read(settingsControllerProvider.notifier).syncNow();
+      if (context.mounted) {
+        showMessage(context, context.t.synced(result.pushed, result.pulled));
+      }
     } catch (error) {
-      if (context.mounted) showMessage(context, 'Sync failed: $error');
+      if (context.mounted) showMessage(context, context.t.syncFailed(error));
     }
   }
 
@@ -230,7 +286,7 @@ class SettingsPage extends ConsumerWidget {
     try {
       final items = await opmlService.importFromFile();
       if (items.isEmpty) {
-        if (context.mounted) showMessage(context, 'No feeds imported');
+        if (context.mounted) showMessage(context, context.t.noFeedsImported);
         return;
       }
 
@@ -248,9 +304,11 @@ class SettingsPage extends ConsumerWidget {
           failed++;
         }
       }
-      if (context.mounted) showMessage(context, 'Import complete: $success added, $failed failed');
+      if (context.mounted) {
+        showMessage(context, context.t.importComplete(success, failed));
+      }
     } catch (error) {
-      if (context.mounted) showMessage(context, 'Import failed: $error');
+      if (context.mounted) showMessage(context, context.t.importFailed(error));
     }
   }
 
@@ -258,9 +316,12 @@ class SettingsPage extends ConsumerWidget {
     try {
       final feeds = await ref.read(feedRepositoryProvider).getFeeds();
       final path = await opmlService.exportToFile(feeds);
-      if (context.mounted) showMessage(context, path == null ? 'Export canceled' : 'OPML exported');
+      if (context.mounted) {
+        showMessage(context,
+            path == null ? context.t.exportCanceled : context.t.opmlExported);
+      }
     } catch (error) {
-      if (context.mounted) showMessage(context, 'Export failed: $error');
+      if (context.mounted) showMessage(context, context.t.exportFailed(error));
     }
   }
 

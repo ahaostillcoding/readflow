@@ -13,7 +13,8 @@ class FeedParserService {
 
   final Dio _dio;
 
-  Future<ParsedFeed> fetchAndParse(String url, {String category = 'Other'}) async {
+  Future<ParsedFeed> fetchAndParse(String url,
+      {String category = 'Other'}) async {
     final response = await _dio.get<String>(url.trim());
     final body = response.data;
     if (body == null || body.trim().isEmpty) {
@@ -22,7 +23,8 @@ class FeedParserService {
     return parse(body, feedUrl: url.trim(), category: category);
   }
 
-  ParsedFeed parse(String xmlText, {required String feedUrl, String category = 'Other'}) {
+  ParsedFeed parse(String xmlText,
+      {required String feedUrl, String category = 'Other'}) {
     final document = XmlDocument.parse(xmlText.trim());
     final root = document.rootElement;
     final rootName = root.name.local.toLowerCase();
@@ -45,15 +47,18 @@ class FeedParserService {
     throw const FormatException('Unsupported RSS, Atom, or RDF feed format.');
   }
 
-  ParsedFeed _parseRss(XmlElement root, {required String feedUrl, required String category}) {
+  ParsedFeed _parseRss(XmlElement root,
+      {required String feedUrl, required String category}) {
     final channel = _firstDescendant(root, 'channel') ?? root;
     final title = _text(_child(channel, 'title')) ?? feedUrl;
     final description = _text(_child(channel, 'description'));
     final siteUrl = _text(_child(channel, 'link'));
-    final iconUrl = _text(_child(_child(channel, 'image'), 'url')) ?? _text(_child(channel, 'icon'));
+    final iconUrl = _text(_child(_child(channel, 'image'), 'url')) ??
+        _text(_child(channel, 'icon'));
 
     final entries = _children(channel, 'item')
-        .map((item) => _parseRssItem(item, category: category, feedUrl: feedUrl))
+        .map(
+            (item) => _parseRssItem(item, category: category, feedUrl: feedUrl))
         .whereType<ParsedEntry>()
         .toList();
 
@@ -67,12 +72,14 @@ class FeedParserService {
     );
   }
 
-  ParsedFeed _parseRdf(XmlElement root, {required String feedUrl, required String category}) {
+  ParsedFeed _parseRdf(XmlElement root,
+      {required String feedUrl, required String category}) {
     final title = _text(_child(root, 'title')) ?? feedUrl;
     final description = _text(_child(root, 'description'));
     final siteUrl = _text(_child(root, 'link'));
     final entries = _children(root, 'item')
-        .map((item) => _parseRssItem(item, category: category, feedUrl: feedUrl))
+        .map(
+            (item) => _parseRssItem(item, category: category, feedUrl: feedUrl))
         .whereType<ParsedEntry>()
         .toList();
 
@@ -85,13 +92,15 @@ class FeedParserService {
     );
   }
 
-  ParsedFeed _parseAtom(XmlElement root, {required String feedUrl, required String category}) {
+  ParsedFeed _parseAtom(XmlElement root,
+      {required String feedUrl, required String category}) {
     final title = _text(_child(root, 'title')) ?? feedUrl;
     final description = _text(_child(root, 'subtitle'));
     final siteUrl = _atomLink(root, rel: 'alternate') ?? _atomLink(root);
     final iconUrl = _text(_child(root, 'icon')) ?? _text(_child(root, 'logo'));
     final entries = _children(root, 'entry')
-        .map((entry) => _parseAtomEntry(entry, category: category, feedUrl: feedUrl))
+        .map((entry) =>
+            _parseAtomEntry(entry, category: category, feedUrl: feedUrl))
         .whereType<ParsedEntry>()
         .toList();
 
@@ -105,13 +114,17 @@ class FeedParserService {
     );
   }
 
-  ParsedEntry? _parseRssItem(XmlElement item, {required String category, required String feedUrl}) {
+  ParsedEntry? _parseRssItem(XmlElement item,
+      {required String category, required String feedUrl}) {
     final title = _text(_child(item, 'title')) ?? 'Untitled';
-    final link = (_text(_child(item, 'link')) ?? _text(_child(item, 'origLink')) ?? '').ifBlank(feedUrl);
+    final link =
+        (_text(_child(item, 'link')) ?? _text(_child(item, 'origLink')) ?? '')
+            .ifBlank(feedUrl);
     final guid = _text(_child(item, 'guid')) ?? link.ifBlank(title);
     final rawSummary = _text(_child(item, 'description'));
     final rawContent = _text(_child(item, 'encoded')) ?? rawSummary;
-    final author = _text(_child(item, 'creator')) ?? _text(_child(item, 'author'));
+    final author =
+        _text(_child(item, 'creator')) ?? _text(_child(item, 'author'));
     final imageUrl = _imageFromItem(item, rawContent);
     final contentType = _inferContentType(
       category: category,
@@ -138,9 +151,11 @@ class FeedParserService {
     );
   }
 
-  ParsedEntry? _parseAtomEntry(XmlElement entry, {required String category, required String feedUrl}) {
+  ParsedEntry? _parseAtomEntry(XmlElement entry,
+      {required String category, required String feedUrl}) {
     final title = _text(_child(entry, 'title')) ?? 'Untitled';
-    final link = (_atomLink(entry, rel: 'alternate') ?? _atomLink(entry) ?? '').ifBlank(feedUrl);
+    final link = (_atomLink(entry, rel: 'alternate') ?? _atomLink(entry) ?? '')
+        .ifBlank(feedUrl);
     final guid = _text(_child(entry, 'id')) ?? link.ifBlank(title);
     final rawSummary = _text(_child(entry, 'summary'));
     final rawContent = _text(_child(entry, 'content')) ?? rawSummary;
@@ -161,7 +176,8 @@ class FeedParserService {
       summary: rawSummary == null ? null : _cleanText(_stripHtml(rawSummary)),
       contentHtml: rawContent,
       imageUrl: imageUrl,
-      publishedAt: _parseDate(_text(_child(entry, 'published')) ?? _text(_child(entry, 'updated'))),
+      publishedAt: _parseDate(
+          _text(_child(entry, 'published')) ?? _text(_child(entry, 'updated'))),
       contentType: contentType,
       extraJson: _extraJson(contentType, title, rawSummary, imageUrl),
     );
@@ -175,13 +191,19 @@ class FeedParserService {
   }) {
     final normalizedCategory = category.toLowerCase();
     final haystack = '$category $feedUrl $title ${summary ?? ''}'.toLowerCase();
-    if (normalizedCategory == 'wechat' || haystack.contains('wechat') || haystack.contains('weixin')) {
+    if (normalizedCategory == 'wechat' ||
+        haystack.contains('wechat') ||
+        haystack.contains('weixin')) {
       return ContentType.wechat;
     }
-    if (normalizedCategory == 'novels' || haystack.contains('novel') || haystack.contains('chapter')) {
+    if (normalizedCategory == 'novels' ||
+        haystack.contains('novel') ||
+        haystack.contains('chapter')) {
       return ContentType.novel;
     }
-    if (normalizedCategory == 'movies' || haystack.contains('movie') || haystack.contains('film')) {
+    if (normalizedCategory == 'movies' ||
+        haystack.contains('movie') ||
+        haystack.contains('film')) {
       return ContentType.movie;
     }
     if (normalizedCategory == 'news') return ContentType.news;
@@ -189,18 +211,26 @@ class FeedParserService {
     return ContentType.other;
   }
 
-  String? _extraJson(ContentType type, String title, String? summary, String? imageUrl) {
+  String? _extraJson(
+      ContentType type, String title, String? summary, String? imageUrl) {
     if (type == ContentType.novel) {
-      final chapter = RegExp(r'(chapter\s*[0-9]+[^,._-]*)', caseSensitive: false).firstMatch(title)?.group(1);
+      final chapter =
+          RegExp(r'(chapter\s*[0-9]+[^,._-]*)', caseSensitive: false)
+              .firstMatch(title)
+              ?.group(1);
       return jsonEncode({
-        'novelTitle': chapter == null ? title : title.replaceFirst(chapter, '').trim().ifBlank(title),
+        'novelTitle': chapter == null
+            ? title
+            : title.replaceFirst(chapter, '').trim().ifBlank(title),
         'chapterName': chapter ?? title,
       });
     }
     if (type == ContentType.movie) {
       final text = '$title ${summary ?? ''}';
       final rating = RegExp(r'([0-9](?:\.[0-9])?)\s*/\s*10').firstMatch(text);
-      final release = RegExp(r'(20[0-9]{2}|19[0-9]{2})[-/][0-9]{1,2}[-/][0-9]{1,2}').firstMatch(text);
+      final release =
+          RegExp(r'(20[0-9]{2}|19[0-9]{2})[-/][0-9]{1,2}[-/][0-9]{1,2}')
+              .firstMatch(text);
       return jsonEncode({
         'movieTitle': title,
         'posterUrl': imageUrl,
@@ -222,11 +252,15 @@ class FeedParserService {
   }
 
   Iterable<XmlElement> _children(XmlElement element, String localName) {
-    return element.childElements.where((child) => child.name.local.toLowerCase() == localName.toLowerCase());
+    return element.childElements.where(
+        (child) => child.name.local.toLowerCase() == localName.toLowerCase());
   }
 
   XmlElement? _firstDescendant(XmlElement element, String localName) {
-    return element.descendantElements.where((node) => node.name.local.toLowerCase() == localName.toLowerCase()).firstOrNull;
+    return element.descendantElements
+        .where(
+            (node) => node.name.local.toLowerCase() == localName.toLowerCase())
+        .firstOrNull;
   }
 
   String? _text(XmlElement? element) {
@@ -249,10 +283,12 @@ class FeedParserService {
   String? _imageFromItem(XmlElement item, String? html) {
     for (final child in item.childElements) {
       final local = child.name.local.toLowerCase();
-      if ((local == 'content' || local == 'thumbnail') && child.getAttribute('url') != null) {
+      if ((local == 'content' || local == 'thumbnail') &&
+          child.getAttribute('url') != null) {
         return child.getAttribute('url');
       }
-      if (local == 'enclosure' && (child.getAttribute('type') ?? '').startsWith('image/')) {
+      if (local == 'enclosure' &&
+          (child.getAttribute('type') ?? '').startsWith('image/')) {
         return child.getAttribute('url');
       }
     }

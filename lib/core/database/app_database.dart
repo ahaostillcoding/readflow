@@ -109,17 +109,23 @@ class AppDatabase {
     await db.execute(
       'CREATE UNIQUE INDEX entries_feed_guid_idx ON entries(feed_id, guid)',
     );
-    await db.execute('CREATE INDEX entries_published_idx ON entries(published_at)');
-    await db.execute('CREATE INDEX entries_content_type_idx ON entries(content_type)');
-    await db.execute('CREATE INDEX entries_state_idx ON entries(is_read, is_favorite, is_later)');
-    await db.execute('CREATE INDEX sync_outbox_pending_idx ON sync_outbox(synced_at, created_at)');
+    await db
+        .execute('CREATE INDEX entries_published_idx ON entries(published_at)');
+    await db.execute(
+        'CREATE INDEX entries_content_type_idx ON entries(content_type)');
+    await db.execute(
+        'CREATE INDEX entries_state_idx ON entries(is_read, is_favorite, is_later)');
+    await db.execute(
+        'CREATE INDEX sync_outbox_pending_idx ON sync_outbox(synced_at, created_at)');
   }
 
   Future<void> _upgradeToV2(Database db) async {
-    await _addColumnIfMissing(db, 'entries', 'reading_progress', 'REAL NOT NULL DEFAULT 0');
+    await _addColumnIfMissing(
+        db, 'entries', 'reading_progress', 'REAL NOT NULL DEFAULT 0');
     await _addColumnIfMissing(db, 'entries', 'ai_summary', 'TEXT');
     await _addColumnIfMissing(db, 'entries', 'ai_tags', 'TEXT');
-    await _addColumnIfMissing(db, 'entries', 'full_text_status', "TEXT NOT NULL DEFAULT 'cached'");
+    await _addColumnIfMissing(
+        db, 'entries', 'full_text_status', "TEXT NOT NULL DEFAULT 'cached'");
 
     await db.execute('''
       CREATE TABLE IF NOT EXISTS sync_outbox (
@@ -134,15 +140,20 @@ class AppDatabase {
         last_error TEXT
       )
     ''');
-    await db.execute('CREATE INDEX IF NOT EXISTS entries_state_idx ON entries(is_read, is_favorite, is_later)');
-    await db.execute('CREATE INDEX IF NOT EXISTS sync_outbox_pending_idx ON sync_outbox(synced_at, created_at)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS entries_state_idx ON entries(is_read, is_favorite, is_later)');
+    await db.execute(
+        'CREATE INDEX IF NOT EXISTS sync_outbox_pending_idx ON sync_outbox(synced_at, created_at)');
 
     await db.delete('categories');
     await _seedCategories(db);
-    await db.update('feeds', {'category': 'Other'}, where: 'category NOT IN (?, ?, ?, ?, ?, ?)', whereArgs: defaultCategories);
+    await db.update('feeds', {'category': 'Other'},
+        where: 'category NOT IN (?, ?, ?, ?, ?, ?)',
+        whereArgs: defaultCategories);
   }
 
-  Future<void> _addColumnIfMissing(Database db, String table, String column, String type) async {
+  Future<void> _addColumnIfMissing(
+      Database db, String table, String column, String type) async {
     final columns = await db.rawQuery('PRAGMA table_info($table)');
     final exists = columns.any((row) => row['name'] == column);
     if (!exists) {
@@ -165,10 +176,13 @@ class AppDatabase {
 
   Future<void> _seedSettings(Database db) async {
     await db.insert('app_settings', {'key': 'theme_mode', 'value': 'system'});
+    await db
+        .insert('app_settings', {'key': 'language_mode', 'value': 'system'});
     await db.insert('app_settings', {'key': 'font_size', 'value': '16'});
     await db.insert('app_settings', {'key': 'refresh_minutes', 'value': '60'});
     await db.insert('app_settings', {'key': 'ai_enabled', 'value': 'true'});
-    await db.insert('app_settings', {'key': 'api_base_url', 'value': 'http://localhost:8000'});
+    await db.insert('app_settings',
+        {'key': 'api_base_url', 'value': 'http://localhost:8000'});
   }
 
   Future<void> clearEntries() async {
@@ -177,4 +191,11 @@ class AppDatabase {
   }
 }
 
-const defaultCategories = ['News', 'Articles', 'WeChat', 'Novels', 'Movies', 'Other'];
+const defaultCategories = [
+  'News',
+  'Articles',
+  'WeChat',
+  'Novels',
+  'Movies',
+  'Other'
+];

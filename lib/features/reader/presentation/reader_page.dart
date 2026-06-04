@@ -4,6 +4,7 @@ import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../entries/presentation/entry_providers.dart';
@@ -42,8 +43,12 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   Future<void> _saveProgress() async {
     if (!_scrollController.hasClients) return;
     final max = _scrollController.position.maxScrollExtent;
-    final progress = max <= 0 ? 1.0 : (_scrollController.offset / max).clamp(0, 1).toDouble();
-    await ref.read(entryRepositoryProvider).setReadingProgress(widget.entryId, progress);
+    final progress = max <= 0
+        ? 1.0
+        : (_scrollController.offset / max).clamp(0, 1).toDouble();
+    await ref
+        .read(entryRepositoryProvider)
+        .setReadingProgress(widget.entryId, progress);
   }
 
   void _restoreProgress(double progress) {
@@ -60,45 +65,57 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   Widget build(BuildContext context) {
     final entry = ref.watch(entryProvider(widget.entryId));
     final fontSize = ref.watch(settingsControllerProvider).fontSize;
+    final t = context.t;
 
     return entry.when(
       data: (item) {
         if (item == null) {
-          return const Scaffold(body: Center(child: Text('Content not found')));
+          return Scaffold(body: Center(child: Text(t.contentNotFound)));
         }
 
         _restoreProgress(item.readingProgress);
-        final html = (item.contentHtml?.isNotEmpty ?? false) ? item.contentHtml! : '<p>${item.summary ?? ''}</p>';
+        final html = (item.contentHtml?.isNotEmpty ?? false)
+            ? item.contentHtml!
+            : '<p>${item.summary ?? ''}</p>';
 
         return Scaffold(
           appBar: AppBar(
             title: Text(item.sourceName),
             actions: [
               IconButton(
-                tooltip: item.isFavorite ? 'Remove favorite' : 'Favorite',
+                tooltip: item.isFavorite ? t.removeFavorite : t.favorite,
                 icon: Icon(item.isFavorite ? Icons.star : Icons.star_border),
                 onPressed: () async {
-                  await ref.read(entryRepositoryProvider).setFavorite(item.id, !item.isFavorite);
+                  await ref
+                      .read(entryRepositoryProvider)
+                      .setFavorite(item.id, !item.isFavorite);
                   ref.invalidate(entryProvider(item.id));
                   ref.invalidate(entriesProvider);
                   ref.invalidate(favoriteEntriesProvider);
                 },
               ),
               IconButton(
-                tooltip: item.isLater ? 'Remove later' : 'Read later',
-                icon: Icon(item.isLater ? Icons.schedule : Icons.schedule_outlined),
+                tooltip: item.isLater ? t.removeLater : t.readLater,
+                icon: Icon(
+                    item.isLater ? Icons.schedule : Icons.schedule_outlined),
                 onPressed: () async {
-                  await ref.read(entryRepositoryProvider).setLater(item.id, !item.isLater);
+                  await ref
+                      .read(entryRepositoryProvider)
+                      .setLater(item.id, !item.isLater);
                   ref.invalidate(entryProvider(item.id));
                   ref.invalidate(entriesProvider);
                   ref.invalidate(laterEntriesProvider);
                 },
               ),
               IconButton(
-                tooltip: item.isRead ? 'Mark unread' : 'Mark read',
-                icon: Icon(item.isRead ? Icons.mark_email_read : Icons.mark_email_unread_outlined),
+                tooltip: item.isRead ? t.markUnread : t.markRead,
+                icon: Icon(item.isRead
+                    ? Icons.mark_email_read
+                    : Icons.mark_email_unread_outlined),
                 onPressed: () async {
-                  await ref.read(entryRepositoryProvider).markRead(item.id, !item.isRead);
+                  await ref
+                      .read(entryRepositoryProvider)
+                      .markRead(item.id, !item.isRead);
                   ref.invalidate(entryProvider(item.id));
                   ref.invalidate(entriesProvider);
                 },
@@ -107,18 +124,22 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 onSelected: (value) async {
                   if (value == 'copy') {
                     await Clipboard.setData(ClipboardData(text: item.link));
-                    if (context.mounted) showMessage(context, 'Link copied');
+                    if (context.mounted) {
+                      showMessage(context, context.t.linkCopied);
+                    }
                   }
                   if (value == 'open') {
                     final uri = Uri.tryParse(item.link);
                     if (uri != null) {
-                      await launchUrl(uri, mode: LaunchMode.externalApplication);
+                      await launchUrl(uri,
+                          mode: LaunchMode.externalApplication);
                     }
                   }
                 },
-                itemBuilder: (context) => const [
-                  PopupMenuItem(value: 'copy', child: Text('Copy link')),
-                  PopupMenuItem(value: 'open', child: Text('Open in browser')),
+                itemBuilder: (context) => [
+                  PopupMenuItem(value: 'copy', child: Text(context.t.copyLink)),
+                  PopupMenuItem(
+                      value: 'open', child: Text(context.t.openInBrowser)),
                 ],
               ),
             ],
@@ -127,9 +148,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
             controller: _scrollController,
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
             children: [
-              Text(item.title, style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700)),
+              Text(item.title,
+                  style: Theme.of(context)
+                      .textTheme
+                      .headlineSmall
+                      ?.copyWith(fontWeight: FontWeight.w700)),
               const SizedBox(height: 8),
-              Text('${item.sourceName} | ${formatDateTime(item.publishedAt ?? item.fetchedAt)}'),
+              Text(
+                  '${item.sourceName} | ${formatDateTime(item.publishedAt ?? item.fetchedAt)}'),
               if (item.aiSummary?.isNotEmpty ?? false) ...[
                 const SizedBox(height: 16),
                 DecoratedBox(
@@ -148,7 +174,9 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 Wrap(
                   spacing: 8,
                   runSpacing: 8,
-                  children: item.tagList.map((tag) => Chip(label: Text(tag))).toList(),
+                  children: item.tagList
+                      .map((tag) => Chip(label: Text(tag)))
+                      .toList(),
                 ),
               ],
               if (item.imageUrl != null) ...[
@@ -176,8 +204,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           ),
         );
       },
-      loading: () => const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (error, _) => Scaffold(body: Center(child: Text('Reader failed: $error'))),
+      loading: () =>
+          const Scaffold(body: Center(child: CircularProgressIndicator())),
+      error: (error, _) =>
+          Scaffold(body: Center(child: Text(t.readerFailed(error)))),
     );
   }
 }

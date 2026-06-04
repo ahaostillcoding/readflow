@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/background/background_refresh_service.dart';
+import '../../../core/l10n/app_localizations.dart';
 import '../../entries/presentation/content_flow_page.dart';
 import '../../entries/presentation/recommended_page.dart';
 import '../../entries/presentation/saved_page.dart';
@@ -37,17 +38,6 @@ class _MainShellState extends ConsumerState<MainShell> {
     SettingsPage(),
   ];
 
-  final _destinations = const [
-    NavigationDestination(icon: Icon(Icons.dynamic_feed_outlined), selectedIcon: Icon(Icons.dynamic_feed), label: 'Home'),
-    NavigationDestination(icon: Icon(Icons.rss_feed_outlined), selectedIcon: Icon(Icons.rss_feed), label: 'Feeds'),
-    NavigationDestination(icon: Icon(Icons.star_border), selectedIcon: Icon(Icons.star), label: 'Saved'),
-    NavigationDestination(icon: Icon(Icons.search), selectedIcon: Icon(Icons.search), label: 'Search'),
-    NavigationDestination(icon: Icon(Icons.auto_awesome_outlined), selectedIcon: Icon(Icons.auto_awesome), label: 'For you'),
-    NavigationDestination(icon: Icon(Icons.menu_book_outlined), selectedIcon: Icon(Icons.menu_book), label: 'Novels'),
-    NavigationDestination(icon: Icon(Icons.movie_outlined), selectedIcon: Icon(Icons.movie), label: 'Movies'),
-    NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +64,45 @@ class _MainShellState extends ConsumerState<MainShell> {
 
   @override
   Widget build(BuildContext context) {
-    ref.listen(settingsControllerProvider.select((value) => value.refreshMinutes), (_, __) {
+    final t = context.t;
+    final destinations = [
+      NavigationDestination(
+          icon: const Icon(Icons.dynamic_feed_outlined),
+          selectedIcon: const Icon(Icons.dynamic_feed),
+          label: t.home),
+      NavigationDestination(
+          icon: const Icon(Icons.rss_feed_outlined),
+          selectedIcon: const Icon(Icons.rss_feed),
+          label: t.feeds),
+      NavigationDestination(
+          icon: const Icon(Icons.star_border),
+          selectedIcon: const Icon(Icons.star),
+          label: t.saved),
+      NavigationDestination(
+          icon: const Icon(Icons.search),
+          selectedIcon: const Icon(Icons.search),
+          label: t.search),
+      NavigationDestination(
+          icon: const Icon(Icons.auto_awesome_outlined),
+          selectedIcon: const Icon(Icons.auto_awesome),
+          label: t.forYou),
+      NavigationDestination(
+          icon: const Icon(Icons.menu_book_outlined),
+          selectedIcon: const Icon(Icons.menu_book),
+          label: t.novels),
+      NavigationDestination(
+          icon: const Icon(Icons.movie_outlined),
+          selectedIcon: const Icon(Icons.movie),
+          label: t.movies),
+      NavigationDestination(
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
+          label: t.settings),
+    ];
+
+    ref.listen(
+        settingsControllerProvider.select((value) => value.refreshMinutes),
+        (_, __) {
       _scheduleRefresh();
     });
 
@@ -87,7 +115,7 @@ class _MainShellState extends ConsumerState<MainShell> {
               selectedIndex: _index,
               onDestinationSelected: (value) => setState(() => _index = value),
               labelType: NavigationRailLabelType.all,
-              destinations: _destinations
+              destinations: destinations
                   .map((item) => NavigationRailDestination(
                         icon: item.icon,
                         selectedIcon: item.selectedIcon,
@@ -107,7 +135,7 @@ class _MainShellState extends ConsumerState<MainShell> {
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: _destinations,
+        destinations: destinations,
       ),
     );
   }

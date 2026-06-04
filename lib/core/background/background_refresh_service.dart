@@ -44,7 +44,8 @@ void callbackDispatcher() {
         sendTimeout: const Duration(seconds: 12),
         headers: const {
           'User-Agent': 'ReadFlow/0.1',
-          'Accept': 'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
+          'Accept':
+              'application/rss+xml, application/atom+xml, application/xml, text/xml, */*',
         },
         responseType: ResponseType.plain,
       ),

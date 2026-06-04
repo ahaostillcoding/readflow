@@ -44,7 +44,9 @@ class EntryFilter {
       favoriteOnly: favoriteOnly ?? this.favoriteOnly,
       laterOnly: laterOnly ?? this.laterOnly,
       query: query == _sentinel ? this.query : query as String?,
-      contentType: contentType == _sentinel ? this.contentType : contentType as ContentType?,
+      contentType: contentType == _sentinel
+          ? this.contentType
+          : contentType as ContentType?,
     );
   }
 
@@ -61,7 +63,8 @@ class EntryFilter {
   }
 
   @override
-  int get hashCode => Object.hash(category, feedId, unreadOnly, favoriteOnly, laterOnly, query, contentType);
+  int get hashCode => Object.hash(category, feedId, unreadOnly, favoriteOnly,
+      laterOnly, query, contentType);
 }
 
 const _sentinel = Object();
@@ -74,7 +77,8 @@ final searchEntryFilterProvider = StateProvider<EntryFilter>((ref) {
   return const EntryFilter(category: 'All');
 });
 
-final entriesProvider = FutureProvider.autoDispose.family<List<Entry>, EntryFilter>((ref, filter) {
+final entriesProvider =
+    FutureProvider.autoDispose.family<List<Entry>, EntryFilter>((ref, filter) {
   return ref.watch(entryRepositoryProvider).getEntries(
         category: filter.category,
         feedId: filter.feedId,
@@ -99,13 +103,18 @@ final laterEntriesProvider = FutureProvider.autoDispose<List<Entry>>((ref) {
 });
 
 final novelEntriesProvider = FutureProvider.autoDispose<List<Entry>>((ref) {
-  return ref.watch(entryRepositoryProvider).getEntries(contentType: ContentType.novel);
+  return ref
+      .watch(entryRepositoryProvider)
+      .getEntries(contentType: ContentType.novel);
 });
 
 final movieEntriesProvider = FutureProvider.autoDispose<List<Entry>>((ref) {
-  return ref.watch(entryRepositoryProvider).getEntries(contentType: ContentType.movie);
+  return ref
+      .watch(entryRepositoryProvider)
+      .getEntries(contentType: ContentType.movie);
 });
 
-final recommendedEntriesProvider = FutureProvider.autoDispose<List<Entry>>((ref) {
+final recommendedEntriesProvider =
+    FutureProvider.autoDispose<List<Entry>>((ref) {
   return ref.watch(entryRepositoryProvider).getRecommendedEntries();
 });

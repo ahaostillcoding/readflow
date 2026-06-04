@@ -79,7 +79,8 @@ class SyncRepository {
     final now = DateTime.now().toIso8601String();
     final batch = db.batch();
     for (final row in pending) {
-      batch.update('sync_outbox', {'synced_at': now}, where: 'id = ?', whereArgs: [row['id']]);
+      batch.update('sync_outbox', {'synced_at': now},
+          where: 'id = ?', whereArgs: [row['id']]);
     }
     await batch.commit(noResult: true);
 
@@ -108,7 +109,8 @@ class SyncRepository {
     required String token,
     required Database db,
   }) async {
-    final settings = await db.query('app_settings', where: 'key = ?', whereArgs: ['sync_cursor'], limit: 1);
+    final settings = await db.query('app_settings',
+        where: 'key = ?', whereArgs: ['sync_cursor'], limit: 1);
     final cursor = settings.isEmpty ? '0' : settings.first['value'] as String;
     final response = await _dio.get<Map<String, Object?>>(
       _join(baseUrl, '/sync/pull?cursor=$cursor'),
@@ -125,11 +127,13 @@ class SyncRepository {
   }
 
   Future<String> _deviceKey(Database db) async {
-    final rows = await db.query('app_settings', where: 'key = ?', whereArgs: ['device_key'], limit: 1);
+    final rows = await db.query('app_settings',
+        where: 'key = ?', whereArgs: ['device_key'], limit: 1);
     if (rows.isNotEmpty) return rows.first['value'] as String;
     final random = Random.secure();
     final bytes = List<int>.generate(16, (_) => random.nextInt(256));
-    final key = bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
+    final key =
+        bytes.map((byte) => byte.toRadixString(16).padLeft(2, '0')).join();
     await db.insert(
       'app_settings',
       {'key': 'device_key', 'value': key},

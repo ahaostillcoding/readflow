@@ -79,7 +79,11 @@ class Entry {
   List<String> get tagList {
     final tags = aiTags;
     if (tags == null || tags.trim().isEmpty) return const [];
-    return tags.split(',').map((tag) => tag.trim()).where((tag) => tag.isNotEmpty).toList();
+    return tags
+        .split(',')
+        .map((tag) => tag.trim())
+        .where((tag) => tag.isNotEmpty)
+        .toList();
   }
 
   static DateTime? _date(String? value) {

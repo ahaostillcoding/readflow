@@ -13,10 +13,12 @@ final feedParserProvider = Provider<FeedParserService>((ref) {
 });
 
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
-  return FeedRepository(ref.watch(appDatabaseProvider), ref.watch(feedParserProvider));
+  return FeedRepository(
+      ref.watch(appDatabaseProvider), ref.watch(feedParserProvider));
 });
 
-final feedsControllerProvider = StateNotifierProvider<FeedsController, AsyncValue<List<Feed>>>((ref) {
+final feedsControllerProvider =
+    StateNotifierProvider<FeedsController, AsyncValue<List<Feed>>>((ref) {
   return FeedsController(ref);
 });
 

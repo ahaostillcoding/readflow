@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/models/entry.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/snackbar.dart';
@@ -17,19 +18,21 @@ class ContentFlowPage extends ConsumerWidget {
     final filter = ref.watch(homeEntryFilterProvider);
     final entries = ref.watch(entriesProvider(filter));
     final categories = ref.watch(categoryNamesProvider);
+    final t = context.t;
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('ReadFlow'),
+        title: Text(t.appName),
         actions: [
           IconButton(
-            tooltip: 'Refresh all',
+            tooltip: t.refreshAll,
             icon: const Icon(Icons.refresh),
             onPressed: () async {
-              final results = await ref.read(feedsControllerProvider.notifier).refreshAll();
+              final results =
+                  await ref.read(feedsControllerProvider.notifier).refreshAll();
               if (!context.mounted) return;
               final failed = results.where((result) => !result.success).length;
-              showMessage(context, failed == 0 ? 'Refresh complete' : 'Refresh complete, $failed source(s) failed');
+              showMessage(context, context.t.refreshComplete(failed));
             },
           ),
         ],
@@ -39,12 +42,13 @@ class ContentFlowPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
             child: TextField(
-              decoration: const InputDecoration(
-                prefixIcon: Icon(Icons.search),
-                hintText: 'Search title, summary, content, tags, or source',
+              decoration: InputDecoration(
+                prefixIcon: const Icon(Icons.search),
+                hintText: t.searchHomeHint,
               ),
               onChanged: (value) {
-                ref.read(homeEntryFilterProvider.notifier).state = filter.copyWith(query: value);
+                ref.read(homeEntryFilterProvider.notifier).state =
+                    filter.copyWith(query: value);
               },
             ),
           ),
@@ -59,10 +63,11 @@ class ContentFlowPage extends ConsumerWidget {
                   itemBuilder: (context, index) {
                     final category = all[index];
                     return ChoiceChip(
-                      label: Text(category),
+                      label: Text(t.categoryLabel(category)),
                       selected: filter.category == category,
                       onSelected: (_) {
-                        ref.read(homeEntryFilterProvider.notifier).state = filter.copyWith(category: category);
+                        ref.read(homeEntryFilterProvider.notifier).state =
+                            filter.copyWith(category: category);
                       },
                     );
                   },
@@ -71,7 +76,8 @@ class ContentFlowPage extends ConsumerWidget {
                 );
               },
               loading: () => const Center(child: LinearProgressIndicator()),
-              error: (error, _) => Center(child: Text('Failed to load categories: $error')),
+              error: (error, _) =>
+                  Center(child: Text(t.failedToLoadCategories(error))),
             ),
           ),
           Padding(
@@ -81,24 +87,27 @@ class ContentFlowPage extends ConsumerWidget {
               runSpacing: 8,
               children: [
                 FilterChip(
-                  label: const Text('Unread'),
+                  label: Text(t.unread),
                   selected: filter.unreadOnly,
                   onSelected: (value) {
-                    ref.read(homeEntryFilterProvider.notifier).state = filter.copyWith(unreadOnly: value);
+                    ref.read(homeEntryFilterProvider.notifier).state =
+                        filter.copyWith(unreadOnly: value);
                   },
                 ),
                 FilterChip(
-                  label: const Text('Favorite'),
+                  label: Text(t.favorite),
                   selected: filter.favoriteOnly,
                   onSelected: (value) {
-                    ref.read(homeEntryFilterProvider.notifier).state = filter.copyWith(favoriteOnly: value);
+                    ref.read(homeEntryFilterProvider.notifier).state =
+                        filter.copyWith(favoriteOnly: value);
                   },
                 ),
                 FilterChip(
-                  label: const Text('Later'),
+                  label: Text(t.later),
                   selected: filter.laterOnly,
                   onSelected: (value) {
-                    ref.read(homeEntryFilterProvider.notifier).state = filter.copyWith(laterOnly: value);
+                    ref.read(homeEntryFilterProvider.notifier).state =
+                        filter.copyWith(laterOnly: value);
                   },
                 ),
               ],
@@ -108,12 +117,13 @@ class ContentFlowPage extends ConsumerWidget {
             child: entries.when(
               data: (items) {
                 if (items.isEmpty) {
-                  return const Center(child: Text('No content yet. Add a feed to get started.'));
+                  return Center(child: Text(t.noContentYet));
                 }
                 return EntryList(entries: items);
               },
               loading: () => const Center(child: CircularProgressIndicator()),
-              error: (error, _) => Center(child: Text('Failed to load content: $error')),
+              error: (error, _) =>
+                  Center(child: Text(t.failedToLoadContent(error))),
             ),
           ),
         ],
@@ -146,13 +156,16 @@ class EntryTile extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final subtitle = '${entry.sourceName} | ${entry.category} | ${formatShortDate(entry.publishedAt ?? entry.fetchedAt)}';
+    final t = context.t;
+    final subtitle =
+        '${entry.sourceName} | ${t.categoryLabel(entry.category)} | ${formatShortDate(entry.publishedAt ?? entry.fetchedAt)}';
 
     return Card(
       child: InkWell(
         borderRadius: BorderRadius.circular(8),
         onTap: () {
-          Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReaderPage(entryId: entry.id)));
+          Navigator.of(context).push(
+              MaterialPageRoute(builder: (_) => ReaderPage(entryId: entry.id)));
         },
         child: Padding(
           padding: const EdgeInsets.all(12),
@@ -167,7 +180,8 @@ class EntryTile extends ConsumerWidget {
                     width: 84,
                     height: 84,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(width: 84, height: 84),
+                    errorBuilder: (_, __, ___) =>
+                        const SizedBox(width: 84, height: 84),
                   ),
                 ),
               if (entry.imageUrl != null) const SizedBox(width: 12),
@@ -180,19 +194,26 @@ class EntryTile extends ConsumerWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight: entry.isRead ? FontWeight.w500 : FontWeight.w700,
+                        fontWeight:
+                            entry.isRead ? FontWeight.w500 : FontWeight.w700,
                       ),
                     ),
                     const SizedBox(height: 6),
-                    Text(subtitle, maxLines: 1, overflow: TextOverflow.ellipsis, style: theme.textTheme.bodySmall),
+                    Text(subtitle,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.bodySmall),
                     if (entry.aiSummary?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 6),
-                      Text(entry.aiSummary!, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      Text(entry.aiSummary!,
+                          maxLines: 2, overflow: TextOverflow.ellipsis),
                     ] else if (entry.summary?.isNotEmpty ?? false) ...[
                       const SizedBox(height: 6),
-                      Text(entry.summary!, maxLines: 2, overflow: TextOverflow.ellipsis),
+                      Text(entry.summary!,
+                          maxLines: 2, overflow: TextOverflow.ellipsis),
                     ],
-                    if (entry.readingProgress > 0 && entry.readingProgress < 1) ...[
+                    if (entry.readingProgress > 0 &&
+                        entry.readingProgress < 1) ...[
                       const SizedBox(height: 8),
                       LinearProgressIndicator(value: entry.readingProgress),
                     ],
@@ -202,20 +223,27 @@ class EntryTile extends ConsumerWidget {
               Column(
                 children: [
                   IconButton(
-                    tooltip: entry.isFavorite ? 'Remove favorite' : 'Favorite',
-                    icon: Icon(entry.isFavorite ? Icons.star : Icons.star_border),
+                    tooltip: entry.isFavorite ? t.removeFavorite : t.favorite,
+                    icon:
+                        Icon(entry.isFavorite ? Icons.star : Icons.star_border),
                     onPressed: () async {
-                      await ref.read(entryRepositoryProvider).setFavorite(entry.id, !entry.isFavorite);
+                      await ref
+                          .read(entryRepositoryProvider)
+                          .setFavorite(entry.id, !entry.isFavorite);
                       ref.invalidate(entriesProvider);
                       ref.invalidate(favoriteEntriesProvider);
                       ref.invalidate(recommendedEntriesProvider);
                     },
                   ),
                   IconButton(
-                    tooltip: entry.isLater ? 'Remove later' : 'Read later',
-                    icon: Icon(entry.isLater ? Icons.schedule : Icons.schedule_outlined),
+                    tooltip: entry.isLater ? t.removeLater : t.readLater,
+                    icon: Icon(entry.isLater
+                        ? Icons.schedule
+                        : Icons.schedule_outlined),
                     onPressed: () async {
-                      await ref.read(entryRepositoryProvider).setLater(entry.id, !entry.isLater);
+                      await ref
+                          .read(entryRepositoryProvider)
+                          .setLater(entry.id, !entry.isLater);
                       ref.invalidate(entriesProvider);
                       ref.invalidate(laterEntriesProvider);
                       ref.invalidate(recommendedEntriesProvider);

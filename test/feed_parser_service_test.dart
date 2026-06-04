@@ -23,7 +23,8 @@ void main() {
 ''';
 
     final parser = FeedParserService(Dio());
-    final feed = parser.parse(xml, feedUrl: 'https://example.com/rss.xml', category: 'News');
+    final feed = parser.parse(xml,
+        feedUrl: 'https://example.com/rss.xml', category: 'News');
 
     expect(feed.title, 'Example Feed');
     expect(feed.entries, hasLength(1));
@@ -48,7 +49,8 @@ void main() {
 ''';
 
     final parser = FeedParserService(Dio());
-    final feed = parser.parse(xml, feedUrl: 'https://example.com/atom.xml', category: 'Articles');
+    final feed = parser.parse(xml,
+        feedUrl: 'https://example.com/atom.xml', category: 'Articles');
 
     expect(feed.title, 'Atom Feed');
     expect(feed.entries.single.guid, 'atom-1');

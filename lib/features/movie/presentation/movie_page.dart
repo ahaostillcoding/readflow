@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../../core/l10n/app_localizations.dart';
 import '../../../core/models/entry.dart';
 import '../../../core/utils/date_format.dart';
 import '../../entries/presentation/entry_providers.dart';
@@ -14,15 +15,20 @@ class MoviePage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entries = ref.watch(movieEntriesProvider);
+    final t = context.t;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Movies')),
+      appBar: AppBar(title: Text(t.movies)),
       body: entries.when(
         data: (items) {
-          if (items.isEmpty) return const Center(child: Text('No movie content yet.'));
+          if (items.isEmpty) return Center(child: Text(t.noMovieContent));
           return LayoutBuilder(
             builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 1000 ? 3 : constraints.maxWidth >= 640 ? 2 : 1;
+              final columns = constraints.maxWidth >= 1000
+                  ? 3
+                  : constraints.maxWidth >= 640
+                      ? 2
+                      : 1;
               return GridView.builder(
                 padding: const EdgeInsets.all(16),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
@@ -38,7 +44,7 @@ class MoviePage extends ConsumerWidget {
           );
         },
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, _) => Center(child: Text('Failed to load movies: $error')),
+        error: (error, _) => Center(child: Text(t.failedToLoadMovies(error))),
       ),
     );
   }
@@ -52,6 +58,7 @@ class MovieCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final extra = _extra(entry);
+    final t = context.t;
     final poster = (extra['posterUrl'] as String?) ?? entry.imageUrl;
     final rating = extra['rating'] as String?;
     final release = extra['releaseDate'] as String?;
@@ -59,7 +66,8 @@ class MovieCard extends StatelessWidget {
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => ReaderPage(entryId: entry.id))),
+        onTap: () => Navigator.of(context).push(
+            MaterialPageRoute(builder: (_) => ReaderPage(entryId: entry.id))),
         child: Row(
           children: [
             if (poster != null)
@@ -76,15 +84,20 @@ class MovieCard extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(entry.title, maxLines: 2, overflow: TextOverflow.ellipsis, style: Theme.of(context).textTheme.titleMedium),
+                    Text(entry.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.titleMedium),
                     const SizedBox(height: 8),
-                    Text('${entry.sourceName} | ${formatShortDate(entry.publishedAt ?? entry.fetchedAt)}'),
-                    if (rating != null) Text('Rating: $rating'),
-                    if (release != null) Text('Release: $release'),
+                    Text(
+                        '${entry.sourceName} | ${formatShortDate(entry.publishedAt ?? entry.fetchedAt)}'),
+                    if (rating != null) Text(t.rating(rating)),
+                    if (release != null) Text(t.release(release)),
                     if (entry.summary != null) ...[
                       const SizedBox(height: 8),
                       Expanded(
-                        child: Text(entry.summary!, maxLines: 3, overflow: TextOverflow.ellipsis),
+                        child: Text(entry.summary!,
+                            maxLines: 3, overflow: TextOverflow.ellipsis),
                       ),
                     ],
                   ],
@@ -99,7 +112,9 @@ class MovieCard extends StatelessWidget {
 
   Map<String, Object?> _extra(Entry entry) {
     try {
-      return entry.extraJson == null ? const {} : (jsonDecode(entry.extraJson!) as Map<String, Object?>);
+      return entry.extraJson == null
+          ? const {}
+          : (jsonDecode(entry.extraJson!) as Map<String, Object?>);
     } catch (_) {
       return const {};
     }

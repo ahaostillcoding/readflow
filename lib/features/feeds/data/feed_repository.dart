@@ -17,7 +17,8 @@ class FeedRepository {
 
   Future<List<Feed>> getFeeds() async {
     final db = await _database.instance;
-    final rows = await db.query('feeds', orderBy: 'category ASC, title COLLATE NOCASE ASC');
+    final rows = await db.query('feeds',
+        orderBy: 'category ASC, title COLLATE NOCASE ASC');
     return rows.map(Feed.fromMap).toList();
   }
 
@@ -36,7 +37,9 @@ class FeedRepository {
     final feedId = await db.insert(
       'feeds',
       {
-        'title': (customTitle?.trim().isNotEmpty ?? false) ? customTitle!.trim() : parsed.title,
+        'title': (customTitle?.trim().isNotEmpty ?? false)
+            ? customTitle!.trim()
+            : parsed.title,
         'url': url.trim(),
         'site_url': parsed.siteUrl,
         'description': parsed.description,
@@ -53,7 +56,9 @@ class FeedRepository {
     await _insertEntries(db, feedId, category, parsed.entries);
     await _enqueueChange('feed', feedId.toString(), 'add_feed', {
       'url': url.trim(),
-      'title': (customTitle?.trim().isNotEmpty ?? false) ? customTitle!.trim() : parsed.title,
+      'title': (customTitle?.trim().isNotEmpty ?? false)
+          ? customTitle!.trim()
+          : parsed.title,
       'category': category,
     });
     return feedId;
@@ -67,7 +72,8 @@ class FeedRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
-    await _enqueueChange('feed', id.toString(), 'rename_feed', {'title': title.trim()});
+    await _enqueueChange(
+        'feed', id.toString(), 'rename_feed', {'title': title.trim()});
   }
 
   Future<void> updateFeedCategory(int id, String category) async {
@@ -78,30 +84,37 @@ class FeedRepository {
       where: 'id = ?',
       whereArgs: [id],
     );
-    await _enqueueChange('feed', id.toString(), 'change_category', {'category': category});
+    await _enqueueChange(
+        'feed', id.toString(), 'change_category', {'category': category});
   }
 
   Future<void> setFeedEnabled(int id, bool enabled) async {
     final db = await _database.instance;
     await db.update(
       'feeds',
-      {'enabled': enabled ? 1 : 0, 'updated_at': DateTime.now().toIso8601String()},
+      {
+        'enabled': enabled ? 1 : 0,
+        'updated_at': DateTime.now().toIso8601String()
+      },
       where: 'id = ?',
       whereArgs: [id],
     );
-    await _enqueueChange('feed', id.toString(), 'set_enabled', {'enabled': enabled});
+    await _enqueueChange(
+        'feed', id.toString(), 'set_enabled', {'enabled': enabled});
   }
 
   Future<void> deleteFeed(int id) async {
     final db = await _database.instance;
     await db.delete('feeds', where: 'id = ?', whereArgs: [id]);
-    await _enqueueChange('feed', id.toString(), 'delete_feed', {'deleted': true});
+    await _enqueueChange(
+        'feed', id.toString(), 'delete_feed', {'deleted': true});
   }
 
   Future<RefreshResult> refreshFeed(Feed feed) async {
     final db = await _database.instance;
     try {
-      final parsed = await _parser.fetchAndParse(feed.url, category: feed.category);
+      final parsed =
+          await _parser.fetchAndParse(feed.url, category: feed.category);
       await _insertEntries(db, feed.id, feed.category, parsed.entries);
       await db.update(
         'feeds',
@@ -117,7 +130,8 @@ class FeedRepository {
         where: 'id = ?',
         whereArgs: [feed.id],
       );
-      return RefreshResult(feedId: feed.id, success: true, newCount: parsed.entries.length);
+      return RefreshResult(
+          feedId: feed.id, success: true, newCount: parsed.entries.length);
     } catch (error) {
       await db.update(
         'feeds',
@@ -129,7 +143,8 @@ class FeedRepository {
         where: 'id = ?',
         whereArgs: [feed.id],
       );
-      return RefreshResult(feedId: feed.id, success: false, error: error.toString());
+      return RefreshResult(
+          feedId: feed.id, success: false, error: error.toString());
     }
   }
 
@@ -180,7 +195,8 @@ class FeedRepository {
     await batch.commit(noResult: true);
   }
 
-  Future<void> _enqueueChange(String entityType, String entityId, String action, Map<String, Object?> payload) async {
+  Future<void> _enqueueChange(String entityType, String entityId, String action,
+      Map<String, Object?> payload) async {
     final db = await _database.instance;
     await db.insert('sync_outbox', {
       'entity_type': entityType,
