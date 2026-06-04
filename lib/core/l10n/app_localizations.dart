@@ -108,6 +108,10 @@ class AppStrings {
   String get copyLink => text('复制链接', 'Copy link');
   String get openInBrowser => text('在浏览器打开', 'Open in browser');
   String get linkCopied => text('链接已复制', 'Link copied');
+  String get selectionCopied => text('选中内容已复制', 'Selection copied');
+  String get markSelection => text('标记', 'Mark');
+  String get selectionMarked => text('已标记选中内容', 'Selection marked');
+  String get articleHighlights => text('文章标记', 'Highlights');
   String get contentNotFound => text('未找到内容', 'Content not found');
   String get markRead => text('标记已读', 'Mark read');
   String get markUnread => text('标记未读', 'Mark unread');

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:html/dom.dart' as dom;
+import 'package:html/parser.dart' as html_parser;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/l10n/app_localizations.dart';
@@ -20,8 +23,21 @@ class ReaderPage extends ConsumerStatefulWidget {
 }
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
+  static const _readerFontFamily = 'Microsoft YaHei UI';
+  static const _readerFontFallback = [
+    'Microsoft YaHei',
+    'PingFang SC',
+    'Noto Sans CJK SC',
+    'Noto Sans SC',
+    'Source Han Sans SC',
+    'Segoe UI',
+    'Roboto',
+  ];
+
   final _scrollController = ScrollController();
+  final _highlights = <String>[];
   bool _initialPositionApplied = false;
+  String? _selectedText;
 
   @override
   void initState() {
@@ -61,6 +77,107 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     });
   }
 
+  void _handleSelectionChanged(SelectedContent? content) {
+    final selected = content?.plainText.trim();
+    _selectedText = selected == null || selected.isEmpty ? null : selected;
+  }
+
+  Widget _buildSelectionToolbar(
+    BuildContext context,
+    SelectableRegionState selectableRegionState,
+  ) {
+    final selectedText = _selectedText;
+    final buttonItems = <ContextMenuButtonItem>[
+      if (selectedText != null && selectedText.isNotEmpty)
+        ContextMenuButtonItem(
+          label: context.t.markSelection,
+          onPressed: () {
+            _markSelection(selectedText);
+            selectableRegionState.clearSelection();
+            ContextMenuController.removeAny();
+            showMessage(context, context.t.selectionMarked);
+          },
+        ),
+      ...selectableRegionState.contextMenuButtonItems,
+    ];
+
+    return AdaptiveTextSelectionToolbar.buttonItems(
+      anchors: selectableRegionState.contextMenuAnchors,
+      buttonItems: buttonItems,
+    );
+  }
+
+  void _markSelection(String text) {
+    final normalized = text.replaceAll(RegExp(r'\s+'), ' ').trim();
+    if (normalized.isEmpty) return;
+    setState(() {
+      if (!_highlights.contains(normalized)) {
+        _highlights.insert(0, normalized);
+      }
+    });
+  }
+
+  String _applyHighlights(String html) {
+    if (_highlights.isEmpty) return html;
+    final fragment = html_parser.parseFragment(html);
+    for (final highlight in _highlights) {
+      _highlightNode(fragment, highlight);
+    }
+    return fragment.nodes.map(_serializeNode).join();
+  }
+
+  String _serializeNode(dom.Node node) {
+    if (node is dom.Element) return node.outerHtml;
+    if (node is dom.Text) return node.data;
+    return node.text ?? '';
+  }
+
+  void _highlightNode(dom.Node node, String highlight) {
+    if (node is dom.Element && node.localName == 'mark') return;
+    for (final child in List<dom.Node>.from(node.nodes)) {
+      if (child is dom.Text) {
+        _highlightTextNode(child, highlight);
+      } else {
+        _highlightNode(child, highlight);
+      }
+    }
+  }
+
+  void _highlightTextNode(dom.Text node, String highlight) {
+    final text = node.data;
+    if (highlight.isEmpty || !text.contains(highlight)) return;
+
+    final parent = node.parentNode;
+    if (parent == null) return;
+
+    var start = 0;
+    while (true) {
+      final index = text.indexOf(highlight, start);
+      if (index < 0) {
+        final tail = text.substring(start);
+        if (tail.isNotEmpty) parent.insertBefore(dom.Text(tail), node);
+        break;
+      }
+
+      final before = text.substring(start, index);
+      if (before.isNotEmpty) parent.insertBefore(dom.Text(before), node);
+
+      final mark = dom.Element.tag('mark')
+        ..text = text.substring(index, index + highlight.length);
+      parent.insertBefore(mark, node);
+      start = index + highlight.length;
+    }
+
+    node.remove();
+  }
+
+  Future<void> _copyText(BuildContext context, String text) async {
+    await Clipboard.setData(ClipboardData(text: text));
+    if (context.mounted) {
+      showMessage(context, context.t.selectionCopied);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final entry = ref.watch(entryProvider(widget.entryId));
@@ -77,6 +194,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
         final html = (item.contentHtml?.isNotEmpty ?? false)
             ? item.contentHtml!
             : '<p>${item.summary ?? ''}</p>';
+        final highlightedHtml = _applyHighlights(html);
 
         return Scaffold(
           appBar: AppBar(
@@ -144,63 +262,183 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
               ),
             ],
           ),
-          body: ListView(
-            controller: _scrollController,
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
-            children: [
-              Text(item.title,
-                  style: Theme.of(context)
-                      .textTheme
-                      .headlineSmall
-                      ?.copyWith(fontWeight: FontWeight.w700)),
-              const SizedBox(height: 8),
-              Text(
-                  '${item.sourceName} | ${formatDateTime(item.publishedAt ?? item.fetchedAt)}'),
-              if (item.aiSummary?.isNotEmpty ?? false) ...[
-                const SizedBox(height: 16),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.secondaryContainer,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Text(item.aiSummary!),
-                  ),
-                ),
-              ],
-              if (item.tagList.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: item.tagList
-                      .map((tag) => Chip(label: Text(tag)))
-                      .toList(),
-                ),
-              ],
-              if (item.imageUrl != null) ...[
-                const SizedBox(height: 16),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: Image.network(item.imageUrl!, fit: BoxFit.cover),
-                ),
-              ],
-              const SizedBox(height: 12),
-              Html(
-                data: html,
-                style: {
-                  'body': Style(
-                    fontSize: FontSize(fontSize),
-                    lineHeight: const LineHeight(1.55),
-                    margin: Margins.zero,
-                    padding: HtmlPaddings.zero,
-                  ),
-                  'p': Style(margin: Margins.only(bottom: 12)),
-                  'img': Style(margin: Margins.symmetric(vertical: 8)),
+          body: SelectionArea(
+            onSelectionChanged: _handleSelectionChanged,
+            contextMenuBuilder: _buildSelectionToolbar,
+            child: Scrollbar(
+              controller: _scrollController,
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final horizontalPadding =
+                      constraints.maxWidth >= 900 ? 32.0 : 20.0;
+                  return ListView(
+                    controller: _scrollController,
+                    padding: EdgeInsets.fromLTRB(
+                      horizontalPadding,
+                      18,
+                      horizontalPadding,
+                      36,
+                    ),
+                    children: [
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 780),
+                          child: DefaultTextStyle.merge(
+                            style: TextStyle(
+                              fontFamily: _readerFontFamily,
+                              fontFamilyFallback: _readerFontFallback,
+                              height: 1.62,
+                              letterSpacing: 0,
+                              color: Theme.of(context).colorScheme.onSurface,
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  item.title,
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .headlineSmall
+                                      ?.copyWith(
+                                        fontFamily: _readerFontFamily,
+                                        fontFamilyFallback: _readerFontFallback,
+                                        fontWeight: FontWeight.w700,
+                                        height: 1.3,
+                                        letterSpacing: 0,
+                                      ),
+                                ),
+                                const SizedBox(height: 10),
+                                Text(
+                                  '${item.sourceName} | ${formatDateTime(item.publishedAt ?? item.fetchedAt)}',
+                                  style: Theme.of(context)
+                                      .textTheme
+                                      .bodySmall
+                                      ?.copyWith(
+                                        fontFamily: _readerFontFamily,
+                                        fontFamilyFallback: _readerFontFallback,
+                                        height: 1.4,
+                                      ),
+                                ),
+                                if (_highlights.isNotEmpty) ...[
+                                  const SizedBox(height: 16),
+                                  _HighlightPanel(
+                                    highlights: _highlights,
+                                    onCopy: (text) => _copyText(context, text),
+                                    title: t.articleHighlights,
+                                  ),
+                                ],
+                                if (item.aiSummary?.isNotEmpty ?? false) ...[
+                                  const SizedBox(height: 16),
+                                  DecoratedBox(
+                                    decoration: BoxDecoration(
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .secondaryContainer,
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                    child: Padding(
+                                      padding: const EdgeInsets.all(14),
+                                      child: Text(
+                                        item.aiSummary!,
+                                        style: TextStyle(
+                                          fontFamily: _readerFontFamily,
+                                          fontFamilyFallback:
+                                              _readerFontFallback,
+                                          height: 1.58,
+                                          letterSpacing: 0,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                                if (item.tagList.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  Wrap(
+                                    spacing: 8,
+                                    runSpacing: 8,
+                                    children: item.tagList
+                                        .map((tag) => Chip(label: Text(tag)))
+                                        .toList(),
+                                  ),
+                                ],
+                                if (item.imageUrl != null) ...[
+                                  const SizedBox(height: 18),
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(8),
+                                    child: Image.network(item.imageUrl!,
+                                        fit: BoxFit.cover),
+                                  ),
+                                ],
+                                const SizedBox(height: 16),
+                                Html(
+                                  data: highlightedHtml,
+                                  style: {
+                                    'body': Style(
+                                      fontFamily: _readerFontFamily,
+                                      fontFamilyFallback: _readerFontFallback,
+                                      fontSize: FontSize(fontSize),
+                                      lineHeight: const LineHeight(1.68),
+                                      letterSpacing: 0,
+                                      margin: Margins.zero,
+                                      padding: HtmlPaddings.zero,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onSurface,
+                                    ),
+                                    'p': Style(
+                                      margin: Margins.only(bottom: 16),
+                                      textAlign: TextAlign.start,
+                                    ),
+                                    'li': Style(
+                                      margin: Margins.only(bottom: 8),
+                                      lineHeight: const LineHeight(1.62),
+                                    ),
+                                    'h1': Style(
+                                      fontFamily: _readerFontFamily,
+                                      fontFamilyFallback: _readerFontFallback,
+                                      lineHeight: const LineHeight(1.28),
+                                      margin: Margins.only(top: 10, bottom: 12),
+                                    ),
+                                    'h2': Style(
+                                      fontFamily: _readerFontFamily,
+                                      fontFamilyFallback: _readerFontFallback,
+                                      lineHeight: const LineHeight(1.32),
+                                      margin: Margins.only(top: 10, bottom: 10),
+                                    ),
+                                    'h3': Style(
+                                      fontFamily: _readerFontFamily,
+                                      fontFamilyFallback: _readerFontFallback,
+                                      lineHeight: const LineHeight(1.36),
+                                      margin: Margins.only(top: 8, bottom: 8),
+                                    ),
+                                    'blockquote': Style(
+                                      padding: HtmlPaddings.only(left: 14),
+                                      margin: Margins.symmetric(vertical: 12),
+                                      lineHeight: const LineHeight(1.62),
+                                    ),
+                                    'mark': Style(
+                                      backgroundColor: Theme.of(context)
+                                          .colorScheme
+                                          .tertiaryContainer,
+                                      color: Theme.of(context)
+                                          .colorScheme
+                                          .onTertiaryContainer,
+                                    ),
+                                    'img': Style(
+                                      margin: Margins.symmetric(vertical: 10),
+                                    ),
+                                  },
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  );
                 },
               ),
-            ],
+            ),
           ),
         );
       },
@@ -208,6 +446,68 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (error, _) =>
           Scaffold(body: Center(child: Text(t.readerFailed(error)))),
+    );
+  }
+}
+
+class _HighlightPanel extends StatelessWidget {
+  const _HighlightPanel({
+    required this.highlights,
+    required this.onCopy,
+    required this.title,
+  });
+
+  final List<String> highlights;
+  final ValueChanged<String> onCopy;
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.bookmark_border, size: 18),
+                const SizedBox(width: 6),
+                Text(title, style: Theme.of(context).textTheme.labelLarge),
+              ],
+            ),
+            const SizedBox(height: 8),
+            ...highlights.map(
+              (highlight) => Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: InkWell(
+                  borderRadius: BorderRadius.circular(6),
+                  onTap: () => onCopy(highlight),
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 6,
+                    ),
+                    child: Text(
+                      highlight,
+                      maxLines: 3,
+                      overflow: TextOverflow.ellipsis,
+                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            height: 1.48,
+                            letterSpacing: 0,
+                          ),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
