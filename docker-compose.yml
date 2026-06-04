@@ -1,0 +1,29 @@
+services:
+  api:
+    build:
+      context: ./backend
+    environment:
+      READFLOW_DATABASE_URL: postgresql+psycopg://readflow:readflow@postgres:5432/readflow
+      READFLOW_JWT_SECRET: change-me-before-production
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: readflow
+      POSTGRES_USER: readflow
+      POSTGRES_PASSWORD: readflow
+    volumes:
+      - readflow_postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U readflow -d readflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  readflow_postgres:
