@@ -25,7 +25,7 @@ class BackgroundRefreshService {
       _refreshUniqueName,
       _refreshTaskName,
       frequency: frequency,
-      existingWorkPolicy: ExistingWorkPolicy.replace,
+      existingWorkPolicy: ExistingPeriodicWorkPolicy.replace,
       constraints: Constraints(networkType: NetworkType.connected),
     );
   }

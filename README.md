@@ -12,7 +12,7 @@ ReadFlow is a local-first RSS reader MVP for Windows and Android. It uses Flutte
 - Local search across title, summary, cached content, AI fields, and source.
 - Favorite and read-later support.
 - SQLite local storage with migrations.
-- OPML import/export.
+- OPML parse/build support. File picker based OPML import/export is temporarily disabled in the MVP build because the current plugin blocks Android builds with AGP 9 tooling.
 - Sync account MVP: register, login, device registration, and manual outbox sync.
 - Backend API with auth, devices, feeds, sync events, and AI metadata placeholders.
 - Docker Compose deployment for API + PostgreSQL.
@@ -49,25 +49,24 @@ Generate platform projects if needed:
 
 ## Client Commands
 
-Because the current workspace path contains non-ASCII characters, `flutter analyze` may crash in this Flutter version. Use an ASCII-path copy for verification:
+Because the current workspace path contains non-ASCII characters, Flutter and Gradle builds should be verified from an ASCII-path copy on Windows:
 
 ```powershell
+$workspace = Get-Location
 $target = 'C:\readflow_mvp_check'
+$flutter = Join-Path $workspace '.tooling\flutter\bin\flutter.bat'
 if (Test-Path $target) { Remove-Item -Recurse -Force $target }
 New-Item -ItemType Directory -Force -Path $target | Out-Null
-robocopy . $target /E /XD .git .tooling .dart_tool build ephemeral .gradle backend\.venv /XF readflow_dev.db *.log
-D:\Codex项目文件\RSS订阅\.tooling\flutter\bin\flutter.bat analyze
-D:\Codex项目文件\RSS订阅\.tooling\flutter\bin\flutter.bat test
+robocopy $workspace $target /E /XD .git .tooling .dart_tool build ephemeral .gradle backend\.venv /XF readflow_dev.db *.log
+Push-Location $target
+& $flutter analyze
+& $flutter test
+& $flutter build windows --debug
+& $flutter build apk --debug
+Pop-Location
 ```
 
-Build commands:
-
-```powershell
-.\.tooling\flutter\bin\flutter.bat build windows
-.\.tooling\flutter\bin\flutter.bat build apk --debug
-```
-
-Windows builds require Visual Studio with the “Desktop development with C++” workload. Android builds require Android SDK command-line tools and a compatible JDK.
+Windows builds require Visual Studio with the Desktop development with C++ workload. Android builds require Android SDK command-line tools and a compatible JDK.
 
 ## Backend Commands
 
@@ -111,12 +110,12 @@ Verified in this workspace:
 - Flutter SDK installed locally: Flutter 3.44.1.
 - `flutter analyze` passed from ASCII-path verification copy.
 - `flutter test` passed: RSS parser and OPML tests.
+- Windows debug build passed from ASCII-path copy, and `readflow.exe` launched successfully.
+- Android debug APK build passed from ASCII-path copy.
 - Backend dependencies installed in `backend/.venv`.
 - Backend pytest passed.
 - Backend local smoke test passed: `/health` returned `{"status":"ok"}`.
 
 Blocked by machine-level tools:
 
-- Windows build reaches the Flutter build stage but fails because Visual Studio C++ toolchain is not installed.
-- Android build reaches the Flutter build stage but fails because Android SDK is not installed.
-- Docker deployment cannot be executed until Docker Engine / Docker Desktop is installed and running.
+- Docker deployment cannot be executed on this host because Docker Desktop rejects Windows 10 Enterprise LTSC 2021 build 19044. Use Windows 10 22H2 build 19045+, Windows 11, or a Linux host to run `docker compose up --build`.

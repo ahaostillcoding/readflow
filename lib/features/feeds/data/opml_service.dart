@@ -1,7 +1,3 @@
-import 'dart:convert';
-import 'dart:typed_data';
-
-import 'package:file_picker/file_picker.dart';
 import 'package:xml/xml.dart';
 
 import '../../../core/models/feed.dart';
@@ -15,21 +11,10 @@ class OpmlImportItem {
 }
 
 class OpmlService {
-  Future<List<OpmlImportItem>> importFromFile() async {
-    final result = await FilePicker.platform.pickFiles(
-      dialogTitle: 'Choose OPML file',
-      type: FileType.custom,
-      allowedExtensions: ['opml', 'xml'],
-      withData: true,
+  Future<List<OpmlImportItem>> importFromFile() {
+    return Future.error(
+      UnsupportedError('OPML file import is not available in this MVP build.'),
     );
-    final file = result?.files.single;
-    if (file == null) return const [];
-
-    final bytes = file.bytes;
-    if (bytes == null) {
-      throw StateError('Could not read the selected OPML file.');
-    }
-    return parse(utf8.decode(bytes));
   }
 
   List<OpmlImportItem> parse(String opml) {
@@ -51,12 +36,9 @@ class OpmlService {
     return items;
   }
 
-  Future<String?> exportToFile(List<Feed> feeds) async {
-    final content = build(feeds);
-    return FilePicker.platform.saveFile(
-      dialogTitle: 'Export OPML',
-      fileName: 'readflow.opml',
-      bytes: Uint8List.fromList(utf8.encode(content)),
+  Future<String?> exportToFile(List<Feed> feeds) {
+    return Future.error(
+      UnsupportedError('OPML file export is not available in this MVP build.'),
     );
   }
 
