@@ -66,6 +66,9 @@ class AppStrings {
         'Account operation failed. Check the API service and network.',
       );
   String get manageCategories => text('管理分类', 'Manage categories');
+  String get manageSidebar => text('管理侧边栏', 'Manage sidebar');
+  String get sidebarPageItems => text('页面入口', 'Page entries');
+  String get sidebarCategoryItems => text('分类入口', 'Category entries');
   String get feedCategories => text('订阅分类', 'Feed categories');
   String get contentTypes => text('内容类型', 'Content types');
   String get addCategory => text('添加分类', 'Add category');

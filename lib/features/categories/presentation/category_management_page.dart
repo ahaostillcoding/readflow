@@ -7,6 +7,7 @@ import '../../../core/models/feed_category.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../entries/presentation/entry_providers.dart';
 import '../../feeds/presentation/feed_providers.dart';
+import '../../sidebar/presentation/sidebar_providers.dart';
 import 'category_providers.dart';
 
 class CategoryManagementPage extends ConsumerWidget {
@@ -282,6 +283,8 @@ void _invalidate(WidgetRef ref) {
   ref.invalidate(categoryNamesProvider);
   ref.invalidate(contentTypePreferencesProvider);
   ref.invalidate(visibleContentTypePreferencesProvider);
+  ref.invalidate(sidebarItemsProvider);
+  ref.invalidate(visibleSidebarItemsProvider);
   ref.invalidate(feedsControllerProvider);
   ref.invalidate(entriesProvider);
   ref.invalidate(favoriteEntriesProvider);

@@ -11,18 +11,25 @@ import '../../reader/presentation/reader_page.dart';
 import 'entry_providers.dart';
 
 class ContentFlowPage extends ConsumerWidget {
-  const ContentFlowPage({super.key});
+  const ContentFlowPage({this.fixedCategory, this.title, super.key});
+
+  final String? fixedCategory;
+  final String? title;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final filter = ref.watch(homeEntryFilterProvider);
+    final baseFilter = ref.watch(homeEntryFilterProvider);
+    final filter = fixedCategory == null
+        ? baseFilter
+        : baseFilter.copyWith(category: fixedCategory);
     final entries = ref.watch(entriesProvider(filter));
     final categories = ref.watch(categoryNamesProvider);
     final t = context.t;
+    final filterNotifier = ref.read(homeEntryFilterProvider.notifier);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(t.appName),
+        title: Text(title ?? t.appName),
         actions: [
           IconButton(
             tooltip: t.refreshAll,
@@ -47,39 +54,39 @@ class ContentFlowPage extends ConsumerWidget {
                 hintText: t.searchHomeHint,
               ),
               onChanged: (value) {
-                ref.read(homeEntryFilterProvider.notifier).state =
-                    filter.copyWith(query: value);
+                filterNotifier.state = baseFilter.copyWith(query: value);
               },
             ),
           ),
-          SizedBox(
-            height: 48,
-            child: categories.when(
-              data: (items) {
-                final all = ['All', ...items];
-                return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    final category = all[index];
-                    return ChoiceChip(
-                      label: Text(t.categoryLabel(category)),
-                      selected: filter.category == category,
-                      onSelected: (_) {
-                        ref.read(homeEntryFilterProvider.notifier).state =
-                            filter.copyWith(category: category);
-                      },
-                    );
-                  },
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemCount: all.length,
-                );
-              },
-              loading: () => const Center(child: LinearProgressIndicator()),
-              error: (error, _) =>
-                  Center(child: Text(t.failedToLoadCategories(error))),
+          if (fixedCategory == null)
+            SizedBox(
+              height: 48,
+              child: categories.when(
+                data: (items) {
+                  final all = ['All', ...items];
+                  return ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, index) {
+                      final category = all[index];
+                      return ChoiceChip(
+                        label: Text(t.categoryLabel(category)),
+                        selected: filter.category == category,
+                        onSelected: (_) {
+                          filterNotifier.state =
+                              filter.copyWith(category: category);
+                        },
+                      );
+                    },
+                    separatorBuilder: (_, __) => const SizedBox(width: 8),
+                    itemCount: all.length,
+                  );
+                },
+                loading: () => const Center(child: LinearProgressIndicator()),
+                error: (error, _) =>
+                    Center(child: Text(t.failedToLoadCategories(error))),
+              ),
             ),
-          ),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Wrap(
@@ -90,24 +97,24 @@ class ContentFlowPage extends ConsumerWidget {
                   label: Text(t.unread),
                   selected: filter.unreadOnly,
                   onSelected: (value) {
-                    ref.read(homeEntryFilterProvider.notifier).state =
-                        filter.copyWith(unreadOnly: value);
+                    filterNotifier.state =
+                        baseFilter.copyWith(unreadOnly: value);
                   },
                 ),
                 FilterChip(
                   label: Text(t.favorite),
                   selected: filter.favoriteOnly,
                   onSelected: (value) {
-                    ref.read(homeEntryFilterProvider.notifier).state =
-                        filter.copyWith(favoriteOnly: value);
+                    filterNotifier.state =
+                        baseFilter.copyWith(favoriteOnly: value);
                   },
                 ),
                 FilterChip(
                   label: Text(t.later),
                   selected: filter.laterOnly,
                   onSelected: (value) {
-                    ref.read(homeEntryFilterProvider.notifier).state =
-                        filter.copyWith(laterOnly: value);
+                    filterNotifier.state =
+                        baseFilter.copyWith(laterOnly: value);
                   },
                 ),
               ],

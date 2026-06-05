@@ -10,6 +10,7 @@ import '../../categories/presentation/category_management_page.dart';
 import '../../entries/presentation/entry_providers.dart';
 import '../../feeds/data/opml_service.dart';
 import '../../feeds/presentation/feed_providers.dart';
+import '../../sidebar/presentation/sidebar_management_page.dart';
 import 'settings_provider.dart';
 
 class SettingsPage extends ConsumerWidget {
@@ -220,13 +221,27 @@ class SettingsPage extends ConsumerWidget {
           const SizedBox(height: 20),
           Align(
             alignment: Alignment.centerLeft,
-            child: OutlinedButton.icon(
-              onPressed: () => Navigator.of(context).push(
-                MaterialPageRoute(
-                    builder: (_) => const CategoryManagementPage()),
-              ),
-              icon: const Icon(Icons.category_outlined),
-              label: Text(t.manageCategories),
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const CategoryManagementPage()),
+                  ),
+                  icon: const Icon(Icons.category_outlined),
+                  label: Text(t.manageCategories),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute(
+                        builder: (_) => const SidebarManagementPage()),
+                  ),
+                  icon: const Icon(Icons.view_sidebar_outlined),
+                  label: Text(t.manageSidebar),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 20),
