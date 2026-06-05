@@ -6,6 +6,7 @@ import '../../../core/database/app_database.dart';
 import '../../../core/l10n/app_localizations.dart';
 import '../../../core/sync/sync_repository.dart';
 import '../../../core/utils/snackbar.dart';
+import '../../categories/presentation/category_management_page.dart';
 import '../../entries/presentation/entry_providers.dart';
 import '../../feeds/data/opml_service.dart';
 import '../../feeds/presentation/feed_providers.dart';
@@ -214,6 +215,18 @@ class SettingsPage extends ConsumerWidget {
                   ),
                 ],
               ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              onPressed: () => Navigator.of(context).push(
+                MaterialPageRoute(
+                    builder: (_) => const CategoryManagementPage()),
+              ),
+              icon: const Icon(Icons.category_outlined),
+              label: Text(t.manageCategories),
             ),
           ),
           const SizedBox(height: 20),

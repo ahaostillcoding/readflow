@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/l10n/app_localizations.dart';
-import '../../../core/models/content_type.dart';
 import '../../categories/presentation/category_providers.dart';
 import 'content_flow_page.dart';
 import 'entry_providers.dart';
@@ -14,6 +13,7 @@ class SearchPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filter = ref.watch(searchEntryFilterProvider);
     final categories = ref.watch(categoryNamesProvider);
+    final contentTypes = ref.watch(visibleContentTypePreferencesProvider);
     final entries = ref.watch(entriesProvider(filter));
     final t = context.t;
 
@@ -98,23 +98,37 @@ class SearchPage extends ConsumerWidget {
           ),
           SizedBox(
             height: 48,
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              scrollDirection: Axis.horizontal,
-              itemBuilder: (context, index) {
-                final values = [null, ...ContentType.values];
-                final type = values[index];
-                return ChoiceChip(
-                  label: Text(t.contentTypeLabel(type)),
-                  selected: filter.contentType == type,
-                  onSelected: (_) {
+            child: contentTypes.when(
+              data: (items) {
+                if (filter.contentType != null &&
+                    !items.any((item) => item.type == filter.contentType)) {
+                  WidgetsBinding.instance.addPostFrameCallback((_) {
                     ref.read(searchEntryFilterProvider.notifier).state =
-                        filter.copyWith(contentType: type);
+                        filter.copyWith(contentType: null);
+                  });
+                }
+                final values = [null, ...items.map((item) => item.type)];
+                return ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: (context, index) {
+                    final type = values[index];
+                    return ChoiceChip(
+                      label: Text(t.contentTypeLabel(type)),
+                      selected: filter.contentType == type,
+                      onSelected: (_) {
+                        ref.read(searchEntryFilterProvider.notifier).state =
+                            filter.copyWith(contentType: type);
+                      },
+                    );
                   },
+                  separatorBuilder: (_, __) => const SizedBox(width: 8),
+                  itemCount: values.length,
                 );
               },
-              separatorBuilder: (_, __) => const SizedBox(width: 8),
-              itemCount: ContentType.values.length + 1,
+              loading: () => const Center(child: LinearProgressIndicator()),
+              error: (error, _) =>
+                  Center(child: Text(t.failedToLoadCategories(error))),
             ),
           ),
           Expanded(

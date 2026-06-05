@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/database/database_provider.dart';
+import '../../../core/models/content_type_preference.dart';
 import '../../../core/models/feed_category.dart';
 import '../data/category_repository.dart';
 
@@ -15,4 +16,15 @@ final categoriesProvider = FutureProvider<List<FeedCategory>>((ref) {
 final categoryNamesProvider = FutureProvider<List<String>>((ref) async {
   final categories = await ref.watch(categoriesProvider.future);
   return categories.map((category) => category.name).toList();
+});
+
+final contentTypePreferencesProvider =
+    FutureProvider<List<ContentTypePreference>>((ref) {
+  return ref.watch(categoryRepositoryProvider).getContentTypePreferences();
+});
+
+final visibleContentTypePreferencesProvider =
+    FutureProvider<List<ContentTypePreference>>((ref) async {
+  final preferences = await ref.watch(contentTypePreferencesProvider.future);
+  return preferences.where((item) => item.visible).toList();
 });

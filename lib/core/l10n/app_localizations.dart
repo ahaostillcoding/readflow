@@ -65,6 +65,21 @@ class AppStrings {
         '账号操作失败，请检查后端服务和网络连接。',
         'Account operation failed. Check the API service and network.',
       );
+  String get manageCategories => text('管理分类', 'Manage categories');
+  String get feedCategories => text('订阅分类', 'Feed categories');
+  String get contentTypes => text('内容类型', 'Content types');
+  String get addCategory => text('添加分类', 'Add category');
+  String get renameCategory => text('重命名分类', 'Rename category');
+  String get deleteCategory => text('删除分类', 'Delete category');
+  String get categoryName => text('分类名称', 'Category name');
+  String get showItem => text('显示', 'Show');
+  String get hideItem => text('隐藏', 'Hide');
+  String get moveUp => text('上移', 'Move up');
+  String get moveDown => text('下移', 'Move down');
+  String get systemCategoryLocked =>
+      text('系统分类不能重命名或删除', 'System category cannot be renamed or deleted');
+  String deleteCategoryMessage(String name) => text('删除“$name”？该分类下的订阅会移到“其他”。',
+      'Delete "$name"? Feeds in this category will move to "Other".');
 
   String get appName => 'ReadFlow';
   String get home => text('首页', 'Home');
