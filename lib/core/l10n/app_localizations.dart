@@ -33,6 +33,39 @@ class AppStrings {
 
   String text(String zh, String en) => isZh ? zh : en;
 
+  String get checkConnection => text('检查连接', 'Check connection');
+  String get backendConnected => text('后端连接正常', 'Backend connected');
+  String get backendNotChecked =>
+      text('尚未检查后端连接', 'Backend connection not checked');
+  String get backendStartHint => text(
+        '请先在 backend 目录启动服务：.venv\\Scripts\\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000',
+        r'Start the API in backend: .venv\Scripts\python.exe -m uvicorn app.main:app --reload --host 127.0.0.1 --port 8000',
+      );
+  String backendUnavailable(String baseUrl, int? statusCode) {
+    final suffix = statusCode == null
+        ? ''
+        : text('，状态码 $statusCode', ', status $statusCode');
+    return text(
+      '后端未连接：$baseUrl$suffix。$backendStartHint',
+      'Backend is not reachable: $baseUrl$suffix. $backendStartHint',
+    );
+  }
+
+  String accountRequestFailed(int? statusCode) {
+    final suffix = statusCode == null
+        ? ''
+        : text('（状态码 $statusCode）', ' (status $statusCode)');
+    return text(
+      '账号请求失败$suffix，请检查邮箱、密码和后端服务。',
+      'Account request failed$suffix. Check email, password, and API service.',
+    );
+  }
+
+  String get unexpectedAccountError => text(
+        '账号操作失败，请检查后端服务和网络连接。',
+        'Account operation failed. Check the API service and network.',
+      );
+
   String get appName => 'ReadFlow';
   String get home => text('首页', 'Home');
   String get feeds => text('订阅', 'Feeds');

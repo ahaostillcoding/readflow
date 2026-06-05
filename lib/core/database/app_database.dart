@@ -181,8 +181,6 @@ class AppDatabase {
     await db.insert('app_settings', {'key': 'font_size', 'value': '16'});
     await db.insert('app_settings', {'key': 'refresh_minutes', 'value': '60'});
     await db.insert('app_settings', {'key': 'ai_enabled', 'value': 'true'});
-    await db.insert('app_settings',
-        {'key': 'api_base_url', 'value': 'http://localhost:8000'});
   }
 
   Future<void> clearEntries() async {

@@ -13,16 +13,36 @@ class SyncRepository {
   final AppDatabase _database;
   final Dio _dio;
 
+  Future<void> checkHealth({required String baseUrl}) async {
+    try {
+      final response = await _dio.get<Object?>(
+        _join(baseUrl, '/health'),
+        options: _jsonOptions(),
+      );
+      final data = _decodeJson(response.data);
+      if (data is! Map || data['status'] != 'ok') {
+        throw BackendUnavailableException(baseUrl: baseUrl);
+      }
+    } on DioException catch (error) {
+      throw BackendUnavailableException(
+        baseUrl: baseUrl,
+        statusCode: error.response?.statusCode,
+      );
+    }
+  }
+
   Future<String> register({
     required String baseUrl,
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post<Map<String, Object?>>(
+    await checkHealth(baseUrl: baseUrl);
+    final response = await _dio.post<Object?>(
       _join(baseUrl, '/auth/register'),
       data: {'email': email.trim(), 'password': password},
+      options: _jsonOptions(),
     );
-    return response.data?['access_token'] as String;
+    return _accessToken(response.data);
   }
 
   Future<String> login({
@@ -30,12 +50,13 @@ class SyncRepository {
     required String email,
     required String password,
   }) async {
-    final response = await _dio.post<Map<String, Object?>>(
+    await checkHealth(baseUrl: baseUrl);
+    final response = await _dio.post<Object?>(
       _join(baseUrl, '/auth/login'),
       data: {'username': email.trim(), 'password': password},
-      options: Options(contentType: Headers.formUrlEncodedContentType),
+      options: _jsonOptions(contentType: Headers.formUrlEncodedContentType),
     );
-    return response.data?['access_token'] as String;
+    return _accessToken(response.data);
   }
 
   Future<SyncResult> sync({
@@ -73,7 +94,7 @@ class SyncRepository {
     await _dio.post<void>(
       _join(baseUrl, '/sync/push'),
       data: changes,
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
+      options: _jsonOptions(headers: {'Authorization': 'Bearer $token'}),
     );
 
     final now = DateTime.now().toIso8601String();
@@ -100,7 +121,7 @@ class SyncRepository {
         'name': defaultTargetPlatform.name,
         'platform': defaultTargetPlatform.name,
       },
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
+      options: _jsonOptions(headers: {'Authorization': 'Bearer $token'}),
     );
   }
 
@@ -112,12 +133,15 @@ class SyncRepository {
     final settings = await db.query('app_settings',
         where: 'key = ?', whereArgs: ['sync_cursor'], limit: 1);
     final cursor = settings.isEmpty ? '0' : settings.first['value'] as String;
-    final response = await _dio.get<Map<String, Object?>>(
+    final response = await _dio.get<Object?>(
       _join(baseUrl, '/sync/pull?cursor=$cursor'),
-      options: Options(headers: {'Authorization': 'Bearer $token'}),
+      options: _jsonOptions(headers: {'Authorization': 'Bearer $token'}),
     );
-    final nextCursor = response.data?['cursor']?.toString() ?? cursor;
-    final events = response.data?['events'] as List<dynamic>? ?? const [];
+    final data = _decodeJson(response.data);
+    final nextCursor =
+        data is Map ? data['cursor']?.toString() ?? cursor : cursor;
+    final events =
+        data is Map ? data['events'] as List<dynamic>? ?? const [] : const [];
     await db.insert(
       'app_settings',
       {'key': 'sync_cursor', 'value': nextCursor},
@@ -146,6 +170,32 @@ class SyncRepository {
     final trimmed = baseUrl.trim().replaceAll(RegExp(r'/+$'), '');
     return '$trimmed$path';
   }
+
+  Options _jsonOptions({String? contentType, Map<String, String>? headers}) {
+    return Options(
+      contentType: contentType,
+      responseType: ResponseType.json,
+      headers: {
+        'Accept': 'application/json',
+        ...?headers,
+      },
+    );
+  }
+
+  Object? _decodeJson(Object? data) {
+    if (data is String) {
+      return jsonDecode(data);
+    }
+    return data;
+  }
+
+  String _accessToken(Object? data) {
+    final decoded = _decodeJson(data);
+    if (decoded is Map && decoded['access_token'] is String) {
+      return decoded['access_token'] as String;
+    }
+    throw const FormatException('Missing access token.');
+  }
 }
 
 class SyncResult {
@@ -153,4 +203,11 @@ class SyncResult {
 
   final int pushed;
   final int pulled;
+}
+
+class BackendUnavailableException implements Exception {
+  const BackendUnavailableException({required this.baseUrl, this.statusCode});
+
+  final String baseUrl;
+  final int? statusCode;
 }

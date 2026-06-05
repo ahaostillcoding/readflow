@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:dio/dio.dart';
 
 import '../../../core/database/app_database.dart';
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/sync/sync_repository.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../entries/presentation/entry_providers.dart';
 import '../../feeds/data/opml_service.dart';
@@ -27,6 +29,7 @@ class SettingsPage extends ConsumerWidget {
       _emailController.text = settings.accountEmail!;
     }
     final t = context.t;
+    final accountBusy = settings.isAccountBusy;
 
     return Scaffold(
       appBar: AppBar(title: Text(t.settings)),
@@ -149,30 +152,57 @@ class SettingsPage extends ConsumerWidget {
                         ? t.signedInAs(settings.accountEmail)
                         : t.notSignedIn,
                   ),
+                  const SizedBox(height: 6),
+                  Text(
+                    _connectionStatusText(context, settings),
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                          color: settings.apiReachable == false
+                              ? Theme.of(context).colorScheme.error
+                              : null,
+                        ),
+                  ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: 12,
                     runSpacing: 12,
                     children: [
                       FilledButton.icon(
-                        onPressed: () => _login(context, ref),
-                        icon: const Icon(Icons.login),
+                        onPressed:
+                            accountBusy ? null : () => _login(context, ref),
+                        icon: accountBusy
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child:
+                                    CircularProgressIndicator(strokeWidth: 2),
+                              )
+                            : const Icon(Icons.login),
                         label: Text(t.login),
                       ),
                       OutlinedButton.icon(
-                        onPressed: () => _register(context, ref),
+                        onPressed:
+                            accountBusy ? null : () => _register(context, ref),
                         icon: const Icon(Icons.person_add_alt),
                         label: Text(t.register),
                       ),
                       OutlinedButton.icon(
-                        onPressed: (settings.authToken?.isNotEmpty ?? false)
+                        onPressed: accountBusy
+                            ? null
+                            : () => _checkConnection(context, ref),
+                        icon: const Icon(Icons.cloud_done_outlined),
+                        label: Text(t.checkConnection),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: !accountBusy &&
+                                (settings.authToken?.isNotEmpty ?? false)
                             ? () => _syncNow(context, ref)
                             : null,
                         icon: const Icon(Icons.sync),
                         label: Text(t.syncNow),
                       ),
                       OutlinedButton.icon(
-                        onPressed: (settings.authToken?.isNotEmpty ?? false)
+                        onPressed: !accountBusy &&
+                                (settings.authToken?.isNotEmpty ?? false)
                             ? () => ref
                                 .read(settingsControllerProvider.notifier)
                                 .logout()
@@ -247,7 +277,10 @@ class SettingsPage extends ConsumerWidget {
           .login(_emailController.text, _passwordController.text);
       if (context.mounted) showMessage(context, context.t.loginComplete);
     } catch (error) {
-      if (context.mounted) showMessage(context, context.t.loginFailed(error));
+      if (context.mounted) {
+        showMessage(
+            context, context.t.loginFailed(_accountError(context, error)));
+      }
     }
   }
 
@@ -262,8 +295,21 @@ class SettingsPage extends ConsumerWidget {
       if (context.mounted) showMessage(context, context.t.registrationComplete);
     } catch (error) {
       if (context.mounted) {
-        showMessage(context, context.t.registrationFailed(error));
+        showMessage(context,
+            context.t.registrationFailed(_accountError(context, error)));
       }
+    }
+  }
+
+  Future<void> _checkConnection(BuildContext context, WidgetRef ref) async {
+    await ref
+        .read(settingsControllerProvider.notifier)
+        .setApiBaseUrl(_apiController.text);
+    try {
+      await ref.read(settingsControllerProvider.notifier).checkConnection();
+      if (context.mounted) showMessage(context, context.t.backendConnected);
+    } catch (error) {
+      if (context.mounted) showMessage(context, _accountError(context, error));
     }
   }
 
@@ -278,7 +324,10 @@ class SettingsPage extends ConsumerWidget {
         showMessage(context, context.t.synced(result.pushed, result.pulled));
       }
     } catch (error) {
-      if (context.mounted) showMessage(context, context.t.syncFailed(error));
+      if (context.mounted) {
+        showMessage(
+            context, context.t.syncFailed(_accountError(context, error)));
+      }
     }
   }
 
@@ -327,5 +376,30 @@ class SettingsPage extends ConsumerWidget {
 
   String _normalizeCategory(String? category) {
     return defaultCategories.contains(category) ? category! : 'Other';
+  }
+
+  String _connectionStatusText(BuildContext context, SettingsState settings) {
+    if (settings.apiReachable == true) return context.t.backendConnected;
+    if (settings.apiReachable == false) {
+      return context.t
+          .backendUnavailable(settings.apiBaseUrl, settings.apiStatusCode);
+    }
+    return context.t.backendNotChecked;
+  }
+
+  String _accountError(BuildContext context, Object error) {
+    if (error is BackendUnavailableException) {
+      return context.t.backendUnavailable(error.baseUrl, error.statusCode);
+    }
+    if (error is DioException) {
+      return context.t.accountRequestFailed(error.response?.statusCode);
+    }
+    if (error is FormatException) {
+      return context.t.unexpectedAccountError;
+    }
+    if (error is StateError) {
+      return error.message;
+    }
+    return context.t.unexpectedAccountError;
   }
 }
