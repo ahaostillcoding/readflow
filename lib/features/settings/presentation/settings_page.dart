@@ -187,6 +187,13 @@ class SettingsPage extends ConsumerWidget {
                         icon: const Icon(Icons.person_add_alt),
                         label: Text(t.register),
                       ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Wrap(
+                    spacing: 12,
+                    runSpacing: 12,
+                    children: [
                       OutlinedButton.icon(
                         onPressed: accountBusy
                             ? null
@@ -245,34 +252,37 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Wrap(
-            spacing: 12,
-            runSpacing: 12,
-            children: [
-              OutlinedButton.icon(
-                onPressed: () => _importOpml(context, ref),
-                icon: const Icon(Icons.upload_file),
-                label: Text(t.importOpml),
-              ),
-              OutlinedButton.icon(
-                onPressed: () => _exportOpml(context, ref),
-                icon: const Icon(Icons.download),
-                label: Text(t.exportOpml),
-              ),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await ref
-                      .read(settingsControllerProvider.notifier)
-                      .clearCache();
-                  ref.invalidate(entriesProvider);
-                  if (context.mounted) {
-                    showMessage(context, context.t.articleCacheCleared);
-                  }
-                },
-                icon: const Icon(Icons.cleaning_services),
-                label: Text(t.clearArticleCache),
-              ),
-            ],
+          Align(
+            alignment: Alignment.centerLeft,
+            child: Wrap(
+              spacing: 12,
+              runSpacing: 12,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => _importOpml(context, ref),
+                  icon: const Icon(Icons.upload_file),
+                  label: Text(t.importOpml),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _exportOpml(context, ref),
+                  icon: const Icon(Icons.download),
+                  label: Text(t.exportOpml),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await ref
+                        .read(settingsControllerProvider.notifier)
+                        .clearCache();
+                    ref.invalidate(entriesProvider);
+                    if (context.mounted) {
+                      showMessage(context, context.t.articleCacheCleared);
+                    }
+                  },
+                  icon: const Icon(Icons.cleaning_services),
+                  label: Text(t.clearArticleCache),
+                ),
+              ],
+            ),
           ),
           const SizedBox(height: 24),
           Card(

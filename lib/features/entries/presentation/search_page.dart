@@ -35,101 +35,88 @@ class SearchPage extends ConsumerWidget {
               },
             ),
           ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilterChip(
-                  label: Text(t.favorites),
-                  selected: filter.favoriteOnly,
-                  onSelected: (value) {
-                    ref.read(searchEntryFilterProvider.notifier).state =
-                        filter.copyWith(favoriteOnly: value);
-                  },
-                ),
-                FilterChip(
-                  label: Text(t.readLater),
-                  selected: filter.laterOnly,
-                  onSelected: (value) {
-                    ref.read(searchEntryFilterProvider.notifier).state =
-                        filter.copyWith(laterOnly: value);
-                  },
-                ),
-                FilterChip(
-                  label: Text(t.unread),
-                  selected: filter.unreadOnly,
-                  onSelected: (value) {
-                    ref.read(searchEntryFilterProvider.notifier).state =
-                        filter.copyWith(unreadOnly: value);
-                  },
-                ),
-              ],
-            ),
+          _SearchChipStrip(
+            children: [
+              FilterChip(
+                label: Text(t.favorites),
+                selected: filter.favoriteOnly,
+                onSelected: (value) {
+                  ref.read(searchEntryFilterProvider.notifier).state =
+                      filter.copyWith(favoriteOnly: value);
+                },
+              ),
+              FilterChip(
+                label: Text(t.readLater),
+                selected: filter.laterOnly,
+                onSelected: (value) {
+                  ref.read(searchEntryFilterProvider.notifier).state =
+                      filter.copyWith(laterOnly: value);
+                },
+              ),
+              FilterChip(
+                label: Text(t.unread),
+                selected: filter.unreadOnly,
+                onSelected: (value) {
+                  ref.read(searchEntryFilterProvider.notifier).state =
+                      filter.copyWith(unreadOnly: value);
+                },
+              ),
+            ],
           ),
-          SizedBox(
-            height: 48,
-            child: categories.when(
-              data: (items) {
-                final all = ['All', ...items];
-                return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    final category = all[index];
-                    return ChoiceChip(
+          categories.when(
+            data: (items) {
+              final all = ['All', ...items];
+              return _SearchChipStrip(
+                children: [
+                  for (final category in all)
+                    ChoiceChip(
                       label: Text(t.categoryLabel(category)),
                       selected: filter.category == category,
                       onSelected: (_) {
                         ref.read(searchEntryFilterProvider.notifier).state =
                             filter.copyWith(category: category);
                       },
-                    );
-                  },
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemCount: all.length,
-                );
-              },
-              loading: () => const Center(child: LinearProgressIndicator()),
-              error: (error, _) =>
-                  Center(child: Text(t.failedToLoadCategories(error))),
+                    ),
+                ],
+              );
+            },
+            loading: () => const SizedBox(
+              height: 48,
+              child: Center(child: LinearProgressIndicator()),
             ),
+            error: (error, _) =>
+                Center(child: Text(t.failedToLoadCategories(error))),
           ),
-          SizedBox(
-            height: 48,
-            child: contentTypes.when(
-              data: (items) {
-                if (filter.contentType != null &&
-                    !items.any((item) => item.type == filter.contentType)) {
-                  WidgetsBinding.instance.addPostFrameCallback((_) {
-                    ref.read(searchEntryFilterProvider.notifier).state =
-                        filter.copyWith(contentType: null);
-                  });
-                }
-                final values = [null, ...items.map((item) => item.type)];
-                return ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    final type = values[index];
-                    return ChoiceChip(
+          contentTypes.when(
+            data: (items) {
+              if (filter.contentType != null &&
+                  !items.any((item) => item.type == filter.contentType)) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  ref.read(searchEntryFilterProvider.notifier).state =
+                      filter.copyWith(contentType: null);
+                });
+              }
+              final values = [null, ...items.map((item) => item.type)];
+              return _SearchChipStrip(
+                children: [
+                  for (final type in values)
+                    ChoiceChip(
                       label: Text(t.contentTypeLabel(type)),
                       selected: filter.contentType == type,
                       onSelected: (_) {
                         ref.read(searchEntryFilterProvider.notifier).state =
                             filter.copyWith(contentType: type);
                       },
-                    );
-                  },
-                  separatorBuilder: (_, __) => const SizedBox(width: 8),
-                  itemCount: values.length,
-                );
-              },
-              loading: () => const Center(child: LinearProgressIndicator()),
-              error: (error, _) =>
-                  Center(child: Text(t.failedToLoadCategories(error))),
+                    ),
+                ],
+              );
+            },
+            loading: () => const SizedBox(
+              height: 48,
+              child: Center(child: LinearProgressIndicator()),
             ),
+            error: (error, _) =>
+                Center(child: Text(t.failedToLoadCategories(error))),
           ),
           Expanded(
             child: entries.when(
@@ -141,6 +128,35 @@ class SearchPage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _SearchChipStrip extends StatelessWidget {
+  const _SearchChipStrip({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 48,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < children.length; index++) ...[
+                if (index > 0) const SizedBox(width: 8),
+                children[index],
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

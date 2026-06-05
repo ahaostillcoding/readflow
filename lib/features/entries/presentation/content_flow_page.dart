@@ -59,66 +59,55 @@ class ContentFlowPage extends ConsumerWidget {
             ),
           ),
           if (fixedCategory == null)
-            SizedBox(
-              height: 48,
-              child: categories.when(
-                data: (items) {
-                  final all = ['All', ...items];
-                  return ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    scrollDirection: Axis.horizontal,
-                    itemBuilder: (context, index) {
-                      final category = all[index];
-                      return ChoiceChip(
+            categories.when(
+              data: (items) {
+                final all = ['All', ...items];
+                return _ChipStrip(
+                  children: [
+                    for (final category in all)
+                      ChoiceChip(
                         label: Text(t.categoryLabel(category)),
                         selected: filter.category == category,
                         onSelected: (_) {
                           filterNotifier.state =
                               filter.copyWith(category: category);
                         },
-                      );
-                    },
-                    separatorBuilder: (_, __) => const SizedBox(width: 8),
-                    itemCount: all.length,
-                  );
-                },
-                loading: () => const Center(child: LinearProgressIndicator()),
-                error: (error, _) =>
-                    Center(child: Text(t.failedToLoadCategories(error))),
+                      ),
+                  ],
+                );
+              },
+              loading: () => const SizedBox(
+                height: 48,
+                child: Center(child: LinearProgressIndicator()),
               ),
+              error: (error, _) =>
+                  Center(child: Text(t.failedToLoadCategories(error))),
             ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                FilterChip(
-                  label: Text(t.unread),
-                  selected: filter.unreadOnly,
-                  onSelected: (value) {
-                    filterNotifier.state =
-                        baseFilter.copyWith(unreadOnly: value);
-                  },
-                ),
-                FilterChip(
-                  label: Text(t.favorite),
-                  selected: filter.favoriteOnly,
-                  onSelected: (value) {
-                    filterNotifier.state =
-                        baseFilter.copyWith(favoriteOnly: value);
-                  },
-                ),
-                FilterChip(
-                  label: Text(t.later),
-                  selected: filter.laterOnly,
-                  onSelected: (value) {
-                    filterNotifier.state =
-                        baseFilter.copyWith(laterOnly: value);
-                  },
-                ),
-              ],
-            ),
+          _ChipStrip(
+            children: [
+              FilterChip(
+                label: Text(t.unread),
+                selected: filter.unreadOnly,
+                onSelected: (value) {
+                  filterNotifier.state = baseFilter.copyWith(unreadOnly: value);
+                },
+              ),
+              FilterChip(
+                label: Text(t.favorite),
+                selected: filter.favoriteOnly,
+                onSelected: (value) {
+                  filterNotifier.state =
+                      baseFilter.copyWith(favoriteOnly: value);
+                },
+              ),
+              FilterChip(
+                label: Text(t.later),
+                selected: filter.laterOnly,
+                onSelected: (value) {
+                  filterNotifier.state = baseFilter.copyWith(laterOnly: value);
+                },
+              ),
+            ],
           ),
           Expanded(
             child: entries.when(
@@ -134,6 +123,35 @@ class ContentFlowPage extends ConsumerWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _ChipStrip extends StatelessWidget {
+  const _ChipStrip({required this.children});
+
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 54,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var index = 0; index < children.length; index++) ...[
+                if (index > 0) const SizedBox(width: 8),
+                children[index],
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }
