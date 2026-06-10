@@ -181,6 +181,17 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     }
   }
 
+  Future<void> _openArticleLink(BuildContext context, String? url) async {
+    final normalized = url?.trim();
+    if (normalized == null || normalized.isEmpty) return;
+    final uri = Uri.tryParse(normalized);
+    if (uri == null) return;
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      showMessage(context, context.t.fullTextFailed);
+    }
+  }
+
   Future<void> _fetchFullText(
       BuildContext context, WidgetRef ref, Entry item) async {
     if (_fetchingFullText) return;
@@ -196,8 +207,10 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
       ref.invalidate(entryProvider(item.id));
       ref.invalidate(entriesProvider);
       if (context.mounted) showMessage(context, context.t.fullTextFetched);
-    } catch (_) {
-      if (context.mounted) showMessage(context, context.t.fullTextFailed);
+    } catch (error) {
+      if (context.mounted) {
+        showMessage(context, '${context.t.fullTextFailed}: $error');
+      }
     } finally {
       if (mounted) setState(() => _fetchingFullText = false);
     }
@@ -241,6 +254,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                 onSelected: (value) async {
                   if (value == 'full_text') {
                     await _fetchFullText(context, ref, item);
+                    return;
                   }
                   if (value == 'later') {
                     await ref
@@ -249,6 +263,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                     ref.invalidate(entryProvider(item.id));
                     ref.invalidate(entriesProvider);
                     ref.invalidate(laterEntriesProvider);
+                    return;
                   }
                   if (value == 'read') {
                     await ref
@@ -256,19 +271,17 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                         .markRead(item.id, !item.isRead);
                     ref.invalidate(entryProvider(item.id));
                     ref.invalidate(entriesProvider);
+                    return;
                   }
                   if (value == 'copy') {
                     await Clipboard.setData(ClipboardData(text: item.link));
                     if (context.mounted) {
                       showMessage(context, context.t.linkCopied);
                     }
+                    return;
                   }
                   if (value == 'open') {
-                    final uri = Uri.tryParse(item.link);
-                    if (uri != null) {
-                      await launchUrl(uri,
-                          mode: LaunchMode.externalApplication);
-                    }
+                    await _openArticleLink(context, item.link);
                   }
                 },
                 itemBuilder: (context) => [
@@ -417,6 +430,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                 const SizedBox(height: 16),
                                 Html(
                                   data: highlightedHtml,
+                                  onLinkTap: (url, _, __) =>
+                                      _openArticleLink(context, url),
                                   style: {
                                     'body': Style(
                                       fontFamily: _readerFontFamily,

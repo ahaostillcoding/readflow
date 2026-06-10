@@ -300,6 +300,17 @@ class FeedRepository {
       selector: selector,
       excludeSelector: excludeSelector,
     );
+    final rows = await db.query(
+      'entries',
+      columns: ['full_text_status', 'full_text_error'],
+      where: 'id = ?',
+      whereArgs: [entryId],
+      limit: 1,
+    );
+    if (rows.isNotEmpty && rows.first['full_text_status'] == 'failed') {
+      final message = rows.first['full_text_error'] as String?;
+      throw StateError(message ?? 'Full text extraction failed.');
+    }
   }
 
   Future<void> _fetchFullTextForEntries(
