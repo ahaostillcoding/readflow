@@ -15,6 +15,7 @@ class Entry {
     required this.contentType,
     required this.sourceName,
     required this.category,
+    required this.feedFullTextMode,
     this.author,
     this.summary,
     this.contentHtml,
@@ -23,6 +24,9 @@ class Entry {
     this.aiSummary,
     this.aiTags,
     this.fullTextStatus,
+    this.fullTextError,
+    this.feedFullTextSelector,
+    this.feedFullTextExcludeSelector,
     this.extraJson,
   });
 
@@ -44,10 +48,14 @@ class Entry {
   final String? aiSummary;
   final String? aiTags;
   final String? fullTextStatus;
+  final String? fullTextError;
   final ContentType contentType;
   final String? extraJson;
   final String sourceName;
   final String category;
+  final String feedFullTextMode;
+  final String? feedFullTextSelector;
+  final String? feedFullTextExcludeSelector;
 
   factory Entry.fromMap(Map<String, Object?> map) {
     return Entry(
@@ -69,11 +77,29 @@ class Entry {
       aiSummary: map['ai_summary'] as String?,
       aiTags: map['ai_tags'] as String?,
       fullTextStatus: map['full_text_status'] as String?,
+      fullTextError: map['full_text_error'] as String?,
       contentType: ContentType.fromValue(map['content_type'] as String?),
       extraJson: map['extra_json'] as String?,
       sourceName: (map['source_name'] as String?) ?? '',
       category: (map['category'] as String?) ?? 'Other',
+      feedFullTextMode: (map['feed_full_text_mode'] as String?) ?? 'manual',
+      feedFullTextSelector: map['feed_full_text_selector'] as String?,
+      feedFullTextExcludeSelector:
+          map['feed_full_text_exclude_selector'] as String?,
     );
+  }
+
+  bool get mayNeedFullText {
+    final status = fullTextStatus;
+    if (status == 'fetched' || status == 'feed_full' || status == 'disabled') {
+      return false;
+    }
+    final plainLength = (contentHtml ?? summary ?? '')
+        .replaceAll(RegExp(r'<[^>]+>'), ' ')
+        .replaceAll(RegExp(r'\s+'), ' ')
+        .trim()
+        .length;
+    return plainLength < 800 || status == 'feed_summary' || status == 'failed';
   }
 
   List<String> get tagList {

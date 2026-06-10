@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
+import 'package:html/dom.dart' as dom;
 import 'package:html/parser.dart' as html_parser;
 import 'package:xml/xml.dart';
 
@@ -117,15 +118,20 @@ class FeedParserService {
   ParsedEntry? _parseRssItem(XmlElement item,
       {required String category, required String feedUrl}) {
     final title = _text(_child(item, 'title')) ?? 'Untitled';
-    final link =
-        (_text(_child(item, 'link')) ?? _text(_child(item, 'origLink')) ?? '')
-            .ifBlank(feedUrl);
+    final link = _resolveUrl(
+      (_text(_child(item, 'link')) ?? _text(_child(item, 'origLink')) ?? '')
+          .ifBlank(feedUrl),
+      feedUrl,
+    );
     final guid = _text(_child(item, 'guid')) ?? link.ifBlank(title);
-    final rawSummary = _text(_child(item, 'description'));
-    final rawContent = _text(_child(item, 'encoded')) ?? rawSummary;
+    final rawSummary = _elementContent(_child(item, 'description'));
+    final rawContent = _elementContent(_child(item, 'encoded')) ??
+        _elementContent(_child(item, 'content')) ??
+        rawSummary;
     final author =
         _text(_child(item, 'creator')) ?? _text(_child(item, 'author'));
-    final imageUrl = _imageFromItem(item, rawContent);
+    final imageUrl =
+        _resolveNullableUrl(_imageFromItem(item, rawContent), link);
     final contentType = _inferContentType(
       category: category,
       feedUrl: feedUrl,
@@ -139,7 +145,7 @@ class FeedParserService {
       link: link,
       author: author == null ? null : _cleanText(author),
       summary: rawSummary == null ? null : _cleanText(_stripHtml(rawSummary)),
-      contentHtml: rawContent,
+      contentHtml: _normalizeHtmlLinks(rawContent, link),
       imageUrl: imageUrl,
       publishedAt: _parseDate(
         _text(_child(item, 'pubDate')) ??
@@ -148,19 +154,24 @@ class FeedParserService {
       ),
       contentType: contentType,
       extraJson: _extraJson(contentType, title, rawSummary, imageUrl),
+      fullTextStatus: _fullTextStatus(rawSummary, rawContent),
     );
   }
 
   ParsedEntry? _parseAtomEntry(XmlElement entry,
       {required String category, required String feedUrl}) {
     final title = _text(_child(entry, 'title')) ?? 'Untitled';
-    final link = (_atomLink(entry, rel: 'alternate') ?? _atomLink(entry) ?? '')
-        .ifBlank(feedUrl);
+    final link = _resolveUrl(
+      (_atomLink(entry, rel: 'alternate') ?? _atomLink(entry) ?? '')
+          .ifBlank(feedUrl),
+      feedUrl,
+    );
     final guid = _text(_child(entry, 'id')) ?? link.ifBlank(title);
-    final rawSummary = _text(_child(entry, 'summary'));
-    final rawContent = _text(_child(entry, 'content')) ?? rawSummary;
+    final rawSummary = _elementContent(_child(entry, 'summary'));
+    final rawContent = _elementContent(_child(entry, 'content')) ?? rawSummary;
     final author = _text(_child(_child(entry, 'author'), 'name'));
-    final imageUrl = _imageFromItem(entry, rawContent);
+    final imageUrl =
+        _resolveNullableUrl(_imageFromItem(entry, rawContent), link);
     final contentType = _inferContentType(
       category: category,
       feedUrl: feedUrl,
@@ -174,12 +185,13 @@ class FeedParserService {
       link: link,
       author: author == null ? null : _cleanText(author),
       summary: rawSummary == null ? null : _cleanText(_stripHtml(rawSummary)),
-      contentHtml: rawContent,
+      contentHtml: _normalizeHtmlLinks(rawContent, link),
       imageUrl: imageUrl,
       publishedAt: _parseDate(
           _text(_child(entry, 'published')) ?? _text(_child(entry, 'updated'))),
       contentType: contentType,
       extraJson: _extraJson(contentType, title, rawSummary, imageUrl),
+      fullTextStatus: _fullTextStatus(rawSummary, rawContent),
     );
   }
 
@@ -280,12 +292,38 @@ class FeedParserService {
     return null;
   }
 
+  String? _elementContent(XmlElement? element) {
+    if (element == null) return null;
+    final type = element.getAttribute('type')?.toLowerCase();
+    if (type == 'xhtml') {
+      final div = element.childElements
+          .where((child) => child.name.local.toLowerCase() == 'div')
+          .firstOrNull;
+      final html = div?.innerXml.trim() ?? element.innerXml.trim();
+      return html.isEmpty ? null : html;
+    }
+    if (type == 'html' || type == 'text/html') {
+      final html = element.innerText.trim();
+      return html.isEmpty ? null : html;
+    }
+    final xml = element.innerXml.trim();
+    if (xml.contains('<![CDATA[') || xml.contains('<')) {
+      final content = element.innerText.trim();
+      return content.isEmpty ? null : content;
+    }
+    final text = element.innerText.trim();
+    return text.isEmpty ? null : text;
+  }
+
   String? _imageFromItem(XmlElement item, String? html) {
     for (final child in item.childElements) {
       final local = child.name.local.toLowerCase();
+      final type = child.getAttribute('type') ?? '';
       if ((local == 'content' || local == 'thumbnail') &&
           child.getAttribute('url') != null) {
-        return child.getAttribute('url');
+        if (local == 'thumbnail' || type.startsWith('image/')) {
+          return child.getAttribute('url');
+        }
       }
       if (local == 'enclosure' &&
           (child.getAttribute('type') ?? '').startsWith('image/')) {
@@ -306,6 +344,56 @@ class FeedParserService {
 
   String _cleanText(String text) {
     return text.replaceAll(RegExp(r'\s+'), ' ').trim();
+  }
+
+  String _resolveUrl(String value, String baseUrl) {
+    final uri = Uri.tryParse(value.trim());
+    if (uri == null) return value.trim();
+    if (uri.hasScheme) return uri.toString();
+    final base = Uri.tryParse(baseUrl);
+    return base == null ? value.trim() : base.resolveUri(uri).toString();
+  }
+
+  String? _resolveNullableUrl(String? value, String baseUrl) {
+    if (value == null || value.trim().isEmpty) return null;
+    return _resolveUrl(value, baseUrl);
+  }
+
+  String? _normalizeHtmlLinks(String? html, String baseUrl) {
+    if (html == null || html.trim().isEmpty) return html;
+    final fragment = html_parser.parseFragment(html);
+    for (final image in fragment.querySelectorAll('img')) {
+      final src = image.attributes['src'];
+      if (src != null) image.attributes['src'] = _resolveUrl(src, baseUrl);
+    }
+    for (final link in fragment.querySelectorAll('a')) {
+      final href = link.attributes['href'];
+      if (href != null) link.attributes['href'] = _resolveUrl(href, baseUrl);
+    }
+    return fragment.nodes.map(_serializeHtmlNode).join();
+  }
+
+  String _serializeHtmlNode(dom.Node node) {
+    if (node is dom.Element) return node.outerHtml;
+    if (node is dom.Text) return node.data;
+    return node.text ?? '';
+  }
+
+  String _fullTextStatus(String? summary, String? content) {
+    if (content == null || content.trim().isEmpty) return 'feed_summary';
+    final contentText = _cleanText(_stripHtml(content));
+    final summaryText = summary == null ? '' : _cleanText(_stripHtml(summary));
+    if (contentText.length >= 800) return 'feed_full';
+    if (summaryText.isNotEmpty && contentText.length > summaryText.length * 2) {
+      return 'feed_full';
+    }
+    final lower = contentText.toLowerCase();
+    if (lower.contains('read more') ||
+        lower.contains('continue reading') ||
+        contentText.contains('阅读全文')) {
+      return 'feed_summary';
+    }
+    return contentText.length >= 450 ? 'feed_full' : 'feed_summary';
   }
 
   DateTime? _parseDate(String? value) {

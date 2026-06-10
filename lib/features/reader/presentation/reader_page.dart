@@ -8,9 +8,11 @@ import 'package:html/parser.dart' as html_parser;
 import 'package:url_launcher/url_launcher.dart';
 
 import '../../../core/l10n/app_localizations.dart';
+import '../../../core/models/entry.dart';
 import '../../../core/utils/date_format.dart';
 import '../../../core/utils/snackbar.dart';
 import '../../entries/presentation/entry_providers.dart';
+import '../../feeds/presentation/feed_providers.dart';
 import '../../settings/presentation/settings_provider.dart';
 
 class ReaderPage extends ConsumerStatefulWidget {
@@ -38,6 +40,7 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   final _highlights = <String>[];
   bool _initialPositionApplied = false;
   String? _selectedText;
+  bool _fetchingFullText = false;
 
   @override
   void initState() {
@@ -178,6 +181,28 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
     }
   }
 
+  Future<void> _fetchFullText(
+      BuildContext context, WidgetRef ref, Entry item) async {
+    if (_fetchingFullText) return;
+    setState(() => _fetchingFullText = true);
+    try {
+      await ref.read(feedRepositoryProvider).fetchFullTextForEntry(
+            entryId: item.id,
+            url: item.link,
+            mode: item.feedFullTextMode,
+            selector: item.feedFullTextSelector,
+            excludeSelector: item.feedFullTextExcludeSelector,
+          );
+      ref.invalidate(entryProvider(item.id));
+      ref.invalidate(entriesProvider);
+      if (context.mounted) showMessage(context, context.t.fullTextFetched);
+    } catch (_) {
+      if (context.mounted) showMessage(context, context.t.fullTextFailed);
+    } finally {
+      if (mounted) setState(() => _fetchingFullText = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final entry = ref.watch(entryProvider(widget.entryId));
@@ -212,34 +237,26 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                   ref.invalidate(favoriteEntriesProvider);
                 },
               ),
-              IconButton(
-                tooltip: item.isLater ? t.removeLater : t.readLater,
-                icon: Icon(
-                    item.isLater ? Icons.schedule : Icons.schedule_outlined),
-                onPressed: () async {
-                  await ref
-                      .read(entryRepositoryProvider)
-                      .setLater(item.id, !item.isLater);
-                  ref.invalidate(entryProvider(item.id));
-                  ref.invalidate(entriesProvider);
-                  ref.invalidate(laterEntriesProvider);
-                },
-              ),
-              IconButton(
-                tooltip: item.isRead ? t.markUnread : t.markRead,
-                icon: Icon(item.isRead
-                    ? Icons.mark_email_read
-                    : Icons.mark_email_unread_outlined),
-                onPressed: () async {
-                  await ref
-                      .read(entryRepositoryProvider)
-                      .markRead(item.id, !item.isRead);
-                  ref.invalidate(entryProvider(item.id));
-                  ref.invalidate(entriesProvider);
-                },
-              ),
               PopupMenuButton<String>(
                 onSelected: (value) async {
+                  if (value == 'full_text') {
+                    await _fetchFullText(context, ref, item);
+                  }
+                  if (value == 'later') {
+                    await ref
+                        .read(entryRepositoryProvider)
+                        .setLater(item.id, !item.isLater);
+                    ref.invalidate(entryProvider(item.id));
+                    ref.invalidate(entriesProvider);
+                    ref.invalidate(laterEntriesProvider);
+                  }
+                  if (value == 'read') {
+                    await ref
+                        .read(entryRepositoryProvider)
+                        .markRead(item.id, !item.isRead);
+                    ref.invalidate(entryProvider(item.id));
+                    ref.invalidate(entriesProvider);
+                  }
                   if (value == 'copy') {
                     await Clipboard.setData(ClipboardData(text: item.link));
                     if (context.mounted) {
@@ -255,6 +272,21 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                   }
                 },
                 itemBuilder: (context) => [
+                  if (item.mayNeedFullText && item.feedFullTextMode != 'off')
+                    PopupMenuItem(
+                        value: 'full_text', child: Text(context.t.getFullText)),
+                  PopupMenuItem(
+                    value: 'later',
+                    child: Text(item.isLater
+                        ? context.t.removeLater
+                        : context.t.readLater),
+                  ),
+                  PopupMenuItem(
+                    value: 'read',
+                    child: Text(item.isRead
+                        ? context.t.markUnread
+                        : context.t.markRead),
+                  ),
                   PopupMenuItem(value: 'copy', child: Text(context.t.copyLink)),
                   PopupMenuItem(
                       value: 'open', child: Text(context.t.openInBrowser)),
@@ -359,6 +391,19 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                     children: item.tagList
                                         .map((tag) => Chip(label: Text(tag)))
                                         .toList(),
+                                  ),
+                                ],
+                                if (item.mayNeedFullText &&
+                                    item.feedFullTextMode != 'off') ...[
+                                  const SizedBox(height: 16),
+                                  _FullTextPrompt(
+                                    text: t.incompleteContentHint,
+                                    buttonText: _fetchingFullText
+                                        ? t.gettingFullText
+                                        : t.getFullText,
+                                    busy: _fetchingFullText,
+                                    onPressed: () =>
+                                        _fetchFullText(context, ref, item),
                                   ),
                                 ],
                                 if (item.imageUrl != null) ...[
@@ -504,6 +549,61 @@ class _HighlightPanel extends StatelessWidget {
                   ),
                 ),
               ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _FullTextPrompt extends StatelessWidget {
+  const _FullTextPrompt({
+    required this.text,
+    required this.buttonText,
+    required this.busy,
+    required this.onPressed,
+  });
+
+  final String text;
+  final String buttonText;
+  final bool busy;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: colorScheme.secondaryContainer,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Row(
+          children: [
+            Icon(Icons.article_outlined,
+                size: 20, color: colorScheme.onSecondaryContainer),
+            const SizedBox(width: 10),
+            Expanded(
+              child: Text(
+                text,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSecondaryContainer,
+                    ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            FilledButton.icon(
+              onPressed: busy ? null : onPressed,
+              icon: busy
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                  : const Icon(Icons.download_for_offline_outlined),
+              label: Text(buttonText),
             ),
           ],
         ),

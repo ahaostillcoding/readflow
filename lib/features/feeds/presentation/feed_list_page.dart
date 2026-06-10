@@ -130,6 +130,9 @@ class FeedCard extends ConsumerWidget {
                 if (value == 'category' && context.mounted) {
                   await _changeCategory(context, ref);
                 }
+                if (value == 'full_text' && context.mounted) {
+                  await _fullTextSettings(context, ref);
+                }
                 if (value == 'delete' && context.mounted) {
                   await _delete(context, ref);
                 }
@@ -139,6 +142,9 @@ class FeedCard extends ConsumerWidget {
                 PopupMenuItem(value: 'rename', child: Text(context.t.rename)),
                 PopupMenuItem(
                     value: 'category', child: Text(context.t.changeCategory)),
+                PopupMenuItem(
+                    value: 'full_text',
+                    child: Text(context.t.fullTextSettings)),
                 PopupMenuItem(value: 'delete', child: Text(context.t.delete)),
               ],
             ),
@@ -230,5 +236,67 @@ class FeedCard extends ConsumerWidget {
     if (confirmed == true) {
       await ref.read(feedsControllerProvider.notifier).deleteFeed(feed.id);
     }
+  }
+
+  Future<void> _fullTextSettings(BuildContext context, WidgetRef ref) async {
+    final selectorController =
+        TextEditingController(text: feed.fullTextSelector ?? '');
+    final excludeController =
+        TextEditingController(text: feed.fullTextExcludeSelector ?? '');
+    var mode = feed.fullTextMode;
+    final t = context.t;
+    final saved = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(t.fullTextSettings),
+        content: StatefulBuilder(
+          builder: (context, setState) => Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropdownButtonFormField<String>(
+                initialValue: mode,
+                decoration: InputDecoration(labelText: t.fullTextMode),
+                items: [
+                  DropdownMenuItem(value: 'off', child: Text(t.fullTextOff)),
+                  DropdownMenuItem(
+                      value: 'manual', child: Text(t.fullTextManual)),
+                  DropdownMenuItem(value: 'auto', child: Text(t.fullTextAuto)),
+                ],
+                onChanged: (value) => setState(() => mode = value ?? 'manual'),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: selectorController,
+                decoration: InputDecoration(labelText: t.fullTextSelector),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: excludeController,
+                decoration:
+                    InputDecoration(labelText: t.fullTextExcludeSelector),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(t.cancel)),
+          FilledButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              child: Text(t.save)),
+        ],
+      ),
+    );
+    if (saved == true) {
+      await ref.read(feedsControllerProvider.notifier).updateFullTextSettings(
+            feed.id,
+            mode: mode,
+            selector: selectorController.text,
+            excludeSelector: excludeController.text,
+          );
+    }
+    selectorController.dispose();
+    excludeController.dispose();
   }
 }

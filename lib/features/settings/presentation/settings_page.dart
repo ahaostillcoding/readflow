@@ -187,37 +187,32 @@ class SettingsPage extends ConsumerWidget {
                         icon: const Icon(Icons.person_add_alt),
                         label: Text(t.register),
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 10),
-                  Wrap(
-                    spacing: 12,
-                    runSpacing: 12,
-                    children: [
-                      OutlinedButton.icon(
-                        onPressed: accountBusy
-                            ? null
-                            : () => _checkConnection(context, ref),
-                        icon: const Icon(Icons.cloud_done_outlined),
-                        label: Text(t.checkConnection),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: !accountBusy &&
-                                (settings.authToken?.isNotEmpty ?? false)
-                            ? () => _syncNow(context, ref)
-                            : null,
-                        icon: const Icon(Icons.sync),
-                        label: Text(t.syncNow),
-                      ),
-                      OutlinedButton.icon(
-                        onPressed: !accountBusy &&
-                                (settings.authToken?.isNotEmpty ?? false)
-                            ? () => ref
+                      PopupMenuButton<String>(
+                        tooltip: t.moreActions,
+                        enabled: !accountBusy,
+                        onSelected: (value) {
+                          if (value == 'check') _checkConnection(context, ref);
+                          if (value == 'sync') _syncNow(context, ref);
+                          if (value == 'logout') {
+                            ref
                                 .read(settingsControllerProvider.notifier)
-                                .logout()
-                            : null,
-                        icon: const Icon(Icons.logout),
-                        label: Text(t.logout),
+                                .logout();
+                          }
+                        },
+                        itemBuilder: (context) => [
+                          PopupMenuItem(
+                              value: 'check', child: Text(t.checkConnection)),
+                          PopupMenuItem(
+                            value: 'sync',
+                            enabled: settings.authToken?.isNotEmpty ?? false,
+                            child: Text(t.syncNow),
+                          ),
+                          PopupMenuItem(
+                            value: 'logout',
+                            enabled: settings.authToken?.isNotEmpty ?? false,
+                            child: Text(t.logout),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -226,50 +221,54 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
+          Card(
+            child: Column(
               children: [
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).push(
+                ListTile(
+                  leading: const Icon(Icons.category_outlined),
+                  title: Text(t.manageCategories),
+                  subtitle: Text(t.contentManagement),
+                  onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (_) => const CategoryManagementPage()),
                   ),
-                  icon: const Icon(Icons.category_outlined),
-                  label: Text(t.manageCategories),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => Navigator.of(context).push(
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.view_sidebar_outlined),
+                  title: Text(t.manageSidebar),
+                  subtitle: Text(t.contentManagement),
+                  onTap: () => Navigator.of(context).push(
                     MaterialPageRoute(
                         builder: (_) => const SidebarManagementPage()),
                   ),
-                  icon: const Icon(Icons.view_sidebar_outlined),
-                  label: Text(t.manageSidebar),
                 ),
               ],
             ),
           ),
           const SizedBox(height: 20),
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 12,
+          Card(
+            child: Column(
               children: [
-                OutlinedButton.icon(
-                  onPressed: () => _importOpml(context, ref),
-                  icon: const Icon(Icons.upload_file),
-                  label: Text(t.importOpml),
+                ListTile(
+                  leading: const Icon(Icons.upload_file),
+                  title: Text(t.importOpml),
+                  subtitle: Text(t.dataManagement),
+                  onTap: () => _importOpml(context, ref),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () => _exportOpml(context, ref),
-                  icon: const Icon(Icons.download),
-                  label: Text(t.exportOpml),
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.download),
+                  title: Text(t.exportOpml),
+                  subtitle: Text(t.dataManagement),
+                  onTap: () => _exportOpml(context, ref),
                 ),
-                OutlinedButton.icon(
-                  onPressed: () async {
+                const Divider(height: 1),
+                ListTile(
+                  leading: const Icon(Icons.cleaning_services),
+                  title: Text(t.clearArticleCache),
+                  subtitle: Text(t.dataManagement),
+                  onTap: () async {
                     await ref
                         .read(settingsControllerProvider.notifier)
                         .clearCache();
@@ -278,8 +277,6 @@ class SettingsPage extends ConsumerWidget {
                       showMessage(context, context.t.articleCacheCleared);
                     }
                   },
-                  icon: const Icon(Icons.cleaning_services),
-                  label: Text(t.clearArticleCache),
                 ),
               ],
             ),

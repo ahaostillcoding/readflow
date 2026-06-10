@@ -14,7 +14,7 @@ class AppDatabase {
 
     _database = await openDatabase(
       path,
-      version: 2,
+      version: 3,
       onConfigure: (db) async {
         await db.execute('PRAGMA foreign_keys = ON');
       },
@@ -26,6 +26,9 @@ class AppDatabase {
       onUpgrade: (db, oldVersion, newVersion) async {
         if (oldVersion < 2) {
           await _upgradeToV2(db);
+        }
+        if (oldVersion < 3) {
+          await _upgradeToV3(db);
         }
       },
     );
@@ -52,6 +55,10 @@ class AppDatabase {
         icon_url TEXT,
         category TEXT NOT NULL DEFAULT 'Other',
         enabled INTEGER NOT NULL DEFAULT 1,
+        full_text_mode TEXT NOT NULL DEFAULT 'manual',
+        full_text_selector TEXT,
+        full_text_exclude_selector TEXT,
+        full_text_last_error TEXT,
         last_fetch_at TEXT,
         last_error TEXT,
         created_at TEXT NOT NULL,
@@ -79,6 +86,7 @@ class AppDatabase {
         ai_summary TEXT,
         ai_tags TEXT,
         full_text_status TEXT NOT NULL DEFAULT 'cached',
+        full_text_error TEXT,
         content_type TEXT NOT NULL DEFAULT 'other',
         extra_json TEXT,
         FOREIGN KEY(feed_id) REFERENCES feeds(id) ON DELETE CASCADE
@@ -150,6 +158,26 @@ class AppDatabase {
     await db.update('feeds', {'category': 'Other'},
         where: 'category NOT IN (?, ?, ?, ?, ?, ?)',
         whereArgs: defaultCategories);
+  }
+
+  Future<void> _upgradeToV3(Database db) async {
+    await _addColumnIfMissing(
+        db, 'feeds', 'full_text_mode', "TEXT NOT NULL DEFAULT 'manual'");
+    await _addColumnIfMissing(db, 'feeds', 'full_text_selector', 'TEXT');
+    await _addColumnIfMissing(
+        db, 'feeds', 'full_text_exclude_selector', 'TEXT');
+    await _addColumnIfMissing(db, 'feeds', 'full_text_last_error', 'TEXT');
+    await _addColumnIfMissing(db, 'entries', 'full_text_error', 'TEXT');
+    await db.update(
+      'entries',
+      {'full_text_status': 'feed_summary'},
+      where: "full_text_status = 'summary'",
+    );
+    await db.update(
+      'entries',
+      {'full_text_status': 'feed_full'},
+      where: "full_text_status = 'cached'",
+    );
   }
 
   Future<void> _addColumnIfMissing(

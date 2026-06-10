@@ -45,7 +45,10 @@ class EntryRepository {
     }
 
     final rows = await db.rawQuery('''
-      SELECT e.*, f.title AS source_name, f.category AS category
+      SELECT e.*, f.title AS source_name, f.category AS category,
+             f.full_text_mode AS feed_full_text_mode,
+             f.full_text_selector AS feed_full_text_selector,
+             f.full_text_exclude_selector AS feed_full_text_exclude_selector
       FROM entries e
       JOIN feeds f ON f.id = e.feed_id
       ${where.isEmpty ? '' : 'WHERE ${where.join(' AND ')}'}
@@ -66,7 +69,10 @@ class EntryRepository {
         WHERE e.is_favorite = 1 OR e.is_later = 1
         GROUP BY feed_id, category
       )
-      SELECT e.*, f.title AS source_name, f.category AS category
+      SELECT e.*, f.title AS source_name, f.category AS category,
+             f.full_text_mode AS feed_full_text_mode,
+             f.full_text_selector AS feed_full_text_selector,
+             f.full_text_exclude_selector AS feed_full_text_exclude_selector
       FROM entries e
       JOIN feeds f ON f.id = e.feed_id
       LEFT JOIN signals s ON s.feed_id = e.feed_id OR s.category = f.category
@@ -81,7 +87,10 @@ class EntryRepository {
   Future<Entry?> getEntry(int id) async {
     final db = await _database.instance;
     final rows = await db.rawQuery('''
-      SELECT e.*, f.title AS source_name, f.category AS category
+      SELECT e.*, f.title AS source_name, f.category AS category,
+             f.full_text_mode AS feed_full_text_mode,
+             f.full_text_selector AS feed_full_text_selector,
+             f.full_text_exclude_selector AS feed_full_text_exclude_selector
       FROM entries e
       JOIN feeds f ON f.id = e.feed_id
       WHERE e.id = ?

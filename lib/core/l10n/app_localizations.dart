@@ -158,6 +158,26 @@ class AppStrings {
   String get anyType => text('全部类型', 'Any type');
   String get copyLink => text('复制链接', 'Copy link');
   String get openInBrowser => text('在浏览器打开', 'Open in browser');
+  String get moreActions => text('更多操作', 'More actions');
+  String get filter => text('筛选', 'Filter');
+  String get clearFilters => text('清除筛选', 'Clear filters');
+  String get activeFilters => text('当前筛选', 'Active filters');
+  String get contentManagement => text('内容管理', 'Content management');
+  String get dataManagement => text('数据管理', 'Data management');
+  String get readingPreferences => text('阅读偏好', 'Reading preferences');
+  String get fullTextMode => text('全文抓取', 'Full text');
+  String get fullTextOff => text('关闭', 'Off');
+  String get fullTextManual => text('手动', 'Manual');
+  String get fullTextAuto => text('自动', 'Auto');
+  String get fullTextSelector => text('正文选择器', 'Content selector');
+  String get fullTextExcludeSelector => text('排除选择器', 'Exclude selector');
+  String get fullTextSettings => text('全文抓取设置', 'Full text settings');
+  String get getFullText => text('获取全文', 'Get full text');
+  String get gettingFullText => text('正在获取全文...', 'Getting full text...');
+  String get fullTextFetched => text('全文已加载', 'Full text loaded');
+  String get fullTextFailed => text('全文获取失败', 'Full text failed');
+  String get incompleteContentHint =>
+      text('该订阅源可能只提供摘要。', 'This feed may only provide a summary.');
   String get linkCopied => text('链接已复制', 'Link copied');
   String get selectionCopied => text('选中内容已复制', 'Selection copied');
   String get markSelection => text('标记', 'Mark');

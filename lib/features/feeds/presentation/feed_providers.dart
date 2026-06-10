@@ -6,15 +6,23 @@ import '../../../core/network/dio_provider.dart';
 import '../../entries/presentation/entry_providers.dart';
 import '../data/feed_parser_service.dart';
 import '../data/feed_repository.dart';
+import '../data/full_text_service.dart';
 import '../data/parsed_feed.dart';
 
 final feedParserProvider = Provider<FeedParserService>((ref) {
   return FeedParserService(ref.watch(dioProvider));
 });
 
+final fullTextServiceProvider = Provider<FullTextService>((ref) {
+  return FullTextService(ref.watch(dioProvider));
+});
+
 final feedRepositoryProvider = Provider<FeedRepository>((ref) {
   return FeedRepository(
-      ref.watch(appDatabaseProvider), ref.watch(feedParserProvider));
+    ref.watch(appDatabaseProvider),
+    ref.watch(feedParserProvider),
+    ref.watch(fullTextServiceProvider),
+  );
 });
 
 final feedsControllerProvider =
@@ -60,6 +68,21 @@ class FeedsController extends StateNotifier<AsyncValue<List<Feed>>> {
 
   Future<void> setEnabled(int id, bool enabled) async {
     await _repository.setFeedEnabled(id, enabled);
+    await load();
+  }
+
+  Future<void> updateFullTextSettings(
+    int id, {
+    required String mode,
+    String? selector,
+    String? excludeSelector,
+  }) async {
+    await _repository.updateFullTextSettings(
+      id,
+      mode: mode,
+      selector: selector,
+      excludeSelector: excludeSelector,
+    );
     await load();
   }
 

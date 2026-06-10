@@ -7,6 +7,7 @@ import 'package:workmanager/workmanager.dart';
 
 import '../../features/feeds/data/feed_parser_service.dart';
 import '../../features/feeds/data/feed_repository.dart';
+import '../../features/feeds/data/full_text_service.dart';
 import '../database/app_database.dart';
 
 const _refreshTaskName = 'readflow.background.refresh';
@@ -54,6 +55,7 @@ void callbackDispatcher() {
     final repository = FeedRepository(
       AppDatabase(),
       FeedParserService(dio),
+      FullTextService(dio),
     );
     await repository.refreshAllFeeds();
     return true;

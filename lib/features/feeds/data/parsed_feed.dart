@@ -30,6 +30,7 @@ class ParsedEntry {
     this.imageUrl,
     this.publishedAt,
     this.extraJson,
+    this.fullTextStatus = 'feed_summary',
   });
 
   final String guid;
@@ -42,4 +43,5 @@ class ParsedEntry {
   final DateTime? publishedAt;
   final ContentType contentType;
   final String? extraJson;
+  final String fullTextStatus;
 }

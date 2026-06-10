@@ -5,11 +5,15 @@ class Feed {
     required this.url,
     required this.category,
     required this.enabled,
+    required this.fullTextMode,
     required this.createdAt,
     required this.updatedAt,
     this.siteUrl,
     this.description,
     this.iconUrl,
+    this.fullTextSelector,
+    this.fullTextExcludeSelector,
+    this.fullTextLastError,
     this.lastFetchAt,
     this.lastError,
   });
@@ -22,6 +26,10 @@ class Feed {
   final String? iconUrl;
   final String category;
   final bool enabled;
+  final String fullTextMode;
+  final String? fullTextSelector;
+  final String? fullTextExcludeSelector;
+  final String? fullTextLastError;
   final DateTime? lastFetchAt;
   final String? lastError;
   final DateTime createdAt;
@@ -37,6 +45,10 @@ class Feed {
       iconUrl: map['icon_url'] as String?,
       category: map['category'] as String,
       enabled: (map['enabled'] as int) == 1,
+      fullTextMode: (map['full_text_mode'] as String?) ?? 'manual',
+      fullTextSelector: map['full_text_selector'] as String?,
+      fullTextExcludeSelector: map['full_text_exclude_selector'] as String?,
+      fullTextLastError: map['full_text_last_error'] as String?,
       lastFetchAt: _date(map['last_fetch_at'] as String?),
       lastError: map['last_error'] as String?,
       createdAt: _date(map['created_at'] as String?) ?? DateTime.now(),
@@ -53,6 +65,10 @@ class Feed {
     String? iconUrl,
     String? category,
     bool? enabled,
+    String? fullTextMode,
+    String? fullTextSelector,
+    String? fullTextExcludeSelector,
+    String? fullTextLastError,
     DateTime? lastFetchAt,
     String? lastError,
     DateTime? createdAt,
@@ -67,6 +83,11 @@ class Feed {
       iconUrl: iconUrl ?? this.iconUrl,
       category: category ?? this.category,
       enabled: enabled ?? this.enabled,
+      fullTextMode: fullTextMode ?? this.fullTextMode,
+      fullTextSelector: fullTextSelector ?? this.fullTextSelector,
+      fullTextExcludeSelector:
+          fullTextExcludeSelector ?? this.fullTextExcludeSelector,
+      fullTextLastError: fullTextLastError,
       lastFetchAt: lastFetchAt ?? this.lastFetchAt,
       lastError: lastError,
       createdAt: createdAt ?? this.createdAt,
