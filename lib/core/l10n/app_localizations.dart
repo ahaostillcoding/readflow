@@ -165,6 +165,15 @@ class AppStrings {
   String get contentManagement => text('内容管理', 'Content management');
   String get dataManagement => text('数据管理', 'Data management');
   String get readingPreferences => text('阅读偏好', 'Reading preferences');
+  String get listDensity => text('列表密度', 'List density');
+  String get compact => text('紧凑', 'Compact');
+  String get comfortable => text('舒适', 'Comfortable');
+  String get spacious => text('宽松', 'Spacious');
+  String get showImages => text('显示封面图', 'Show images');
+  String get showSummaries => text('显示摘要', 'Show summaries');
+  String get readerLineHeight => text('阅读行距', 'Reader line height');
+  String get readerWidth => text('阅读栏宽度', 'Reader width');
+  String get refreshOnStart => text('启动时自动刷新', 'Refresh on start');
   String get fullTextMode => text('全文抓取', 'Full text');
   String get fullTextOff => text('关闭', 'Off');
   String get fullTextManual => text('手动', 'Manual');

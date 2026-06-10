@@ -73,6 +73,9 @@ class SettingsPage extends ConsumerWidget {
             },
           ),
           const SizedBox(height: 20),
+          Text(t.readingPreferences,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 12),
           Text(t.readerFontSize(settings.fontSize)),
           Slider(
             value: settings.fontSize,
@@ -83,6 +86,71 @@ class SettingsPage extends ConsumerWidget {
             onChanged: (value) => ref
                 .read(settingsControllerProvider.notifier)
                 .setFontSize(value),
+          ),
+          const SizedBox(height: 12),
+          Text(t.readerLineHeight),
+          Slider(
+            value: settings.readerLineHeight,
+            min: 1.35,
+            max: 2.0,
+            divisions: 13,
+            label: settings.readerLineHeight.toStringAsFixed(2),
+            onChanged: (value) => ref
+                .read(settingsControllerProvider.notifier)
+                .setReaderLineHeight(value),
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<int>(
+            initialValue: settings.readerWidth,
+            decoration: InputDecoration(labelText: t.readerWidth),
+            items: const [680, 780, 900, 1040]
+                .map((width) =>
+                    DropdownMenuItem(value: width, child: Text('${width}px')))
+                .toList(),
+            onChanged: (value) {
+              if (value != null) {
+                ref
+                    .read(settingsControllerProvider.notifier)
+                    .setReaderWidth(value);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          DropdownButtonFormField<ListDensity>(
+            initialValue: settings.listDensity,
+            decoration: InputDecoration(labelText: t.listDensity),
+            items: [
+              DropdownMenuItem(
+                  value: ListDensity.compact, child: Text(t.compact)),
+              DropdownMenuItem(
+                  value: ListDensity.comfortable, child: Text(t.comfortable)),
+              DropdownMenuItem(
+                  value: ListDensity.spacious, child: Text(t.spacious)),
+            ],
+            onChanged: (value) {
+              if (value != null) {
+                ref
+                    .read(settingsControllerProvider.notifier)
+                    .setListDensity(value);
+              }
+            },
+          ),
+          const SizedBox(height: 12),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(t.showImages),
+            value: settings.showEntryImages,
+            onChanged: (value) => ref
+                .read(settingsControllerProvider.notifier)
+                .setShowEntryImages(value),
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(t.showSummaries),
+            value: settings.showEntrySummaries,
+            onChanged: (value) => ref
+                .read(settingsControllerProvider.notifier)
+                .setShowEntrySummaries(value),
           ),
           const SizedBox(height: 12),
           DropdownButtonFormField<int>(
@@ -99,6 +167,14 @@ class SettingsPage extends ConsumerWidget {
                     .setRefreshMinutes(value);
               }
             },
+          ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            title: Text(t.refreshOnStart),
+            value: settings.refreshOnStart,
+            onChanged: (value) => ref
+                .read(settingsControllerProvider.notifier)
+                .setRefreshOnStart(value),
           ),
           const SizedBox(height: 12),
           SwitchListTile(

@@ -29,6 +29,12 @@ class SettingsState {
     this.themeMode = ThemeMode.system,
     this.languageMode = LanguageMode.system,
     this.fontSize = 16,
+    this.readerLineHeight = 1.68,
+    this.readerWidth = 780,
+    this.listDensity = ListDensity.comfortable,
+    this.showEntryImages = true,
+    this.showEntrySummaries = true,
+    this.refreshOnStart = true,
     this.refreshMinutes = 60,
     this.aiEnabled = true,
     this.apiBaseUrl = '',
@@ -43,6 +49,12 @@ class SettingsState {
   final ThemeMode themeMode;
   final LanguageMode languageMode;
   final double fontSize;
+  final double readerLineHeight;
+  final int readerWidth;
+  final ListDensity listDensity;
+  final bool showEntryImages;
+  final bool showEntrySummaries;
+  final bool refreshOnStart;
   final int refreshMinutes;
   final bool aiEnabled;
   final String apiBaseUrl;
@@ -57,6 +69,12 @@ class SettingsState {
     ThemeMode? themeMode,
     LanguageMode? languageMode,
     double? fontSize,
+    double? readerLineHeight,
+    int? readerWidth,
+    ListDensity? listDensity,
+    bool? showEntryImages,
+    bool? showEntrySummaries,
+    bool? refreshOnStart,
     int? refreshMinutes,
     bool? aiEnabled,
     String? apiBaseUrl,
@@ -71,6 +89,12 @@ class SettingsState {
       themeMode: themeMode ?? this.themeMode,
       languageMode: languageMode ?? this.languageMode,
       fontSize: fontSize ?? this.fontSize,
+      readerLineHeight: readerLineHeight ?? this.readerLineHeight,
+      readerWidth: readerWidth ?? this.readerWidth,
+      listDensity: listDensity ?? this.listDensity,
+      showEntryImages: showEntryImages ?? this.showEntryImages,
+      showEntrySummaries: showEntrySummaries ?? this.showEntrySummaries,
+      refreshOnStart: refreshOnStart ?? this.refreshOnStart,
       refreshMinutes: refreshMinutes ?? this.refreshMinutes,
       aiEnabled: aiEnabled ?? this.aiEnabled,
       apiBaseUrl: apiBaseUrl ?? this.apiBaseUrl,
@@ -88,6 +112,12 @@ class SettingsState {
 }
 
 const _sentinel = Object();
+
+enum ListDensity {
+  compact,
+  comfortable,
+  spacious,
+}
 
 class SettingsController extends StateNotifier<SettingsState> {
   SettingsController(this._repository, this._syncRepository)
@@ -108,6 +138,13 @@ class SettingsController extends StateNotifier<SettingsState> {
       themeMode: _parseTheme(settings['theme_mode']),
       languageMode: _parseLanguage(settings['language_mode']),
       fontSize: double.tryParse(settings['font_size'] ?? '') ?? 16,
+      readerLineHeight:
+          double.tryParse(settings['reader_line_height'] ?? '') ?? 1.68,
+      readerWidth: int.tryParse(settings['reader_width'] ?? '') ?? 780,
+      listDensity: _parseListDensity(settings['list_density']),
+      showEntryImages: settings['show_entry_images'] != 'false',
+      showEntrySummaries: settings['show_entry_summaries'] != 'false',
+      refreshOnStart: settings['refresh_on_start'] != 'false',
       refreshMinutes: int.tryParse(settings['refresh_minutes'] ?? '') ?? 60,
       aiEnabled: settings['ai_enabled'] != 'false',
       apiBaseUrl: apiBaseUrl,
@@ -130,6 +167,36 @@ class SettingsController extends StateNotifier<SettingsState> {
   Future<void> setFontSize(double size) async {
     state = state.copyWith(fontSize: size);
     await _repository.setValue('font_size', size.toStringAsFixed(0));
+  }
+
+  Future<void> setReaderLineHeight(double value) async {
+    state = state.copyWith(readerLineHeight: value);
+    await _repository.setValue('reader_line_height', value.toStringAsFixed(2));
+  }
+
+  Future<void> setReaderWidth(int value) async {
+    state = state.copyWith(readerWidth: value);
+    await _repository.setValue('reader_width', value.toString());
+  }
+
+  Future<void> setListDensity(ListDensity value) async {
+    state = state.copyWith(listDensity: value);
+    await _repository.setValue('list_density', value.name);
+  }
+
+  Future<void> setShowEntryImages(bool value) async {
+    state = state.copyWith(showEntryImages: value);
+    await _repository.setValue('show_entry_images', value.toString());
+  }
+
+  Future<void> setShowEntrySummaries(bool value) async {
+    state = state.copyWith(showEntrySummaries: value);
+    await _repository.setValue('show_entry_summaries', value.toString());
+  }
+
+  Future<void> setRefreshOnStart(bool value) async {
+    state = state.copyWith(refreshOnStart: value);
+    await _repository.setValue('refresh_on_start', value.toString());
   }
 
   Future<void> setRefreshMinutes(int minutes) async {
@@ -261,6 +328,13 @@ class SettingsController extends StateNotifier<SettingsState> {
     return LanguageMode.values.firstWhere(
       (mode) => mode.name == value,
       orElse: () => LanguageMode.system,
+    );
+  }
+
+  ListDensity _parseListDensity(String? value) {
+    return ListDensity.values.firstWhere(
+      (density) => density.name == value,
+      orElse: () => ListDensity.comfortable,
     );
   }
 }

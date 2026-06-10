@@ -219,7 +219,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
   @override
   Widget build(BuildContext context) {
     final entry = ref.watch(entryProvider(widget.entryId));
-    final fontSize = ref.watch(settingsControllerProvider).fontSize;
+    final settings = ref.watch(settingsControllerProvider);
+    final fontSize = settings.fontSize;
     final t = context.t;
 
     return entry.when(
@@ -327,7 +328,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                     children: [
                       Center(
                         child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 780),
+                          constraints: BoxConstraints(
+                              maxWidth: settings.readerWidth.toDouble()),
                           child: DefaultTextStyle.merge(
                             style: TextStyle(
                               fontFamily: _readerFontFamily,
@@ -437,7 +439,8 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                       fontFamily: _readerFontFamily,
                                       fontFamilyFallback: _readerFontFallback,
                                       fontSize: FontSize(fontSize),
-                                      lineHeight: const LineHeight(1.68),
+                                      lineHeight:
+                                          LineHeight(settings.readerLineHeight),
                                       letterSpacing: 0,
                                       margin: Margins.zero,
                                       padding: HtmlPaddings.zero,

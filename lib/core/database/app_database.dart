@@ -207,6 +207,17 @@ class AppDatabase {
     await db
         .insert('app_settings', {'key': 'language_mode', 'value': 'system'});
     await db.insert('app_settings', {'key': 'font_size', 'value': '16'});
+    await db
+        .insert('app_settings', {'key': 'reader_line_height', 'value': '1.68'});
+    await db.insert('app_settings', {'key': 'reader_width', 'value': '780'});
+    await db.insert(
+        'app_settings', {'key': 'list_density', 'value': 'comfortable'});
+    await db
+        .insert('app_settings', {'key': 'show_entry_images', 'value': 'true'});
+    await db.insert(
+        'app_settings', {'key': 'show_entry_summaries', 'value': 'true'});
+    await db
+        .insert('app_settings', {'key': 'refresh_on_start', 'value': 'true'});
     await db.insert('app_settings', {'key': 'refresh_minutes', 'value': '60'});
     await db.insert('app_settings', {'key': 'ai_enabled', 'value': 'true'});
   }

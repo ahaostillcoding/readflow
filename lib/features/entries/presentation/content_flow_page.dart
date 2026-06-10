@@ -10,6 +10,7 @@ import '../../../core/utils/snackbar.dart';
 import '../../categories/presentation/category_providers.dart';
 import '../../feeds/presentation/feed_providers.dart';
 import '../../reader/presentation/reader_page.dart';
+import '../../settings/presentation/settings_provider.dart';
 import 'entry_providers.dart';
 
 class ContentFlowPage extends ConsumerWidget {
@@ -272,11 +273,33 @@ class EntryList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    return _EntryListView(entries: entries);
+  }
+}
+
+class _EntryListView extends ConsumerWidget {
+  const _EntryListView({required this.entries});
+
+  final List<Entry> entries;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final settings = ref.watch(settingsControllerProvider);
     return ListView.separated(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(switch (settings.listDensity) {
+        ListDensity.compact => 8,
+        ListDensity.comfortable => 16,
+        ListDensity.spacious => 20,
+      }),
       itemCount: entries.length,
       itemBuilder: (context, index) => EntryTile(entry: entries[index]),
-      separatorBuilder: (_, __) => const SizedBox(height: 8),
+      separatorBuilder: (_, __) => SizedBox(
+        height: switch (settings.listDensity) {
+          ListDensity.compact => 6,
+          ListDensity.comfortable => 8,
+          ListDensity.spacious => 12,
+        },
+      ),
     );
   }
 }
@@ -290,6 +313,17 @@ class EntryTile extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final t = context.t;
+    final settings = ref.watch(settingsControllerProvider);
+    final imageSize = switch (settings.listDensity) {
+      ListDensity.compact => 64.0,
+      ListDensity.comfortable => 84.0,
+      ListDensity.spacious => 104.0,
+    };
+    final cardPadding = switch (settings.listDensity) {
+      ListDensity.compact => 8.0,
+      ListDensity.comfortable => 12.0,
+      ListDensity.spacious => 16.0,
+    };
     final subtitle =
         '${entry.sourceName} | ${t.categoryLabel(entry.category)} | ${formatShortDate(entry.publishedAt ?? entry.fetchedAt)}';
 
@@ -301,23 +335,24 @@ class EntryTile extends ConsumerWidget {
               MaterialPageRoute(builder: (_) => ReaderPage(entryId: entry.id)));
         },
         child: Padding(
-          padding: const EdgeInsets.all(12),
+          padding: EdgeInsets.all(cardPadding),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (entry.imageUrl != null)
+              if (settings.showEntryImages && entry.imageUrl != null)
                 ClipRRect(
                   borderRadius: BorderRadius.circular(6),
                   child: Image.network(
                     entry.imageUrl!,
-                    width: 84,
-                    height: 84,
+                    width: imageSize,
+                    height: imageSize,
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) =>
-                        const SizedBox(width: 84, height: 84),
+                        SizedBox(width: imageSize, height: imageSize),
                   ),
                 ),
-              if (entry.imageUrl != null) const SizedBox(width: 12),
+              if (settings.showEntryImages && entry.imageUrl != null)
+                const SizedBox(width: 12),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -336,11 +371,13 @@ class EntryTile extends ConsumerWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: theme.textTheme.bodySmall),
-                    if (entry.aiSummary?.isNotEmpty ?? false) ...[
+                    if (settings.showEntrySummaries &&
+                        (entry.aiSummary?.isNotEmpty ?? false)) ...[
                       const SizedBox(height: 6),
                       Text(entry.aiSummary!,
                           maxLines: 2, overflow: TextOverflow.ellipsis),
-                    ] else if (entry.summary?.isNotEmpty ?? false) ...[
+                    ] else if (settings.showEntrySummaries &&
+                        (entry.summary?.isNotEmpty ?? false)) ...[
                       const SizedBox(height: 6),
                       Text(entry.summary!,
                           maxLines: 2, overflow: TextOverflow.ellipsis),

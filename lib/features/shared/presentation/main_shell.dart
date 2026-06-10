@@ -33,7 +33,9 @@ class _MainShellState extends ConsumerState<MainShell> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(feedsControllerProvider.notifier).refreshAll();
+      if (ref.read(settingsControllerProvider).refreshOnStart) {
+        ref.read(feedsControllerProvider.notifier).refreshAll();
+      }
       _scheduleRefresh();
     });
   }
