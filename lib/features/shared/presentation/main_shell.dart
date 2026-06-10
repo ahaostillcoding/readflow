@@ -92,26 +92,10 @@ class _MainShellState extends ConsumerState<MainShell> {
           children: [
             SizedBox(
               width: 80,
-              child: LayoutBuilder(
-                builder: (context, constraints) => SingleChildScrollView(
-                  child: ConstrainedBox(
-                    constraints:
-                        BoxConstraints(minHeight: constraints.maxHeight),
-                    child: NavigationRail(
-                      selectedIndex: selectedIndex,
-                      onDestinationSelected: (value) =>
-                          setState(() => _index = value),
-                      labelType: NavigationRailLabelType.all,
-                      destinations: destinations
-                          .map((item) => NavigationRailDestination(
-                                icon: item.icon,
-                                selectedIcon: item.selectedIcon,
-                                label: Text(item.label),
-                              ))
-                          .toList(),
-                    ),
-                  ),
-                ),
+              child: _SidebarList(
+                destinations: destinations,
+                selectedIndex: selectedIndex,
+                onSelected: (value) => setState(() => _index = value),
               ),
             ),
             const VerticalDivider(width: 1),
@@ -203,5 +187,86 @@ class _MainShellState extends ConsumerState<MainShell> {
       'settings' => selected ? Icons.settings : Icons.settings_outlined,
       _ => Icons.circle_outlined,
     };
+  }
+}
+
+class _SidebarList extends StatelessWidget {
+  const _SidebarList({
+    required this.destinations,
+    required this.selectedIndex,
+    required this.onSelected,
+  });
+
+  final List<NavigationDestination> destinations;
+  final int selectedIndex;
+  final ValueChanged<int> onSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final colorScheme = Theme.of(context).colorScheme;
+    return Material(
+      color: colorScheme.surface,
+      child: SafeArea(
+        child: ListView.separated(
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          itemCount: destinations.length,
+          separatorBuilder: (_, __) => const SizedBox(height: 4),
+          itemBuilder: (context, index) {
+            final destination = destinations[index];
+            final selected = index == selectedIndex;
+            return Tooltip(
+              message: destination.label,
+              waitDuration: const Duration(milliseconds: 500),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(8),
+                onTap: () => onSelected(index),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 160),
+                  height: 58,
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: selected
+                        ? colorScheme.secondaryContainer
+                        : Colors.transparent,
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      IconTheme(
+                        data: IconThemeData(
+                          size: 22,
+                          color: selected
+                              ? colorScheme.onSecondaryContainer
+                              : colorScheme.onSurfaceVariant,
+                        ),
+                        child: selected
+                            ? destination.selectedIcon ?? destination.icon
+                            : destination.icon,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        destination.label,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: selected
+                                  ? colorScheme.onSecondaryContainer
+                                  : colorScheme.onSurfaceVariant,
+                              fontWeight:
+                                  selected ? FontWeight.w700 : FontWeight.w500,
+                            ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      ),
+    );
   }
 }
