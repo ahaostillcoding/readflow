@@ -92,19 +92,25 @@ class _MainShellState extends ConsumerState<MainShell> {
           children: [
             SizedBox(
               width: 80,
-              child: SingleChildScrollView(
-                child: NavigationRail(
-                  selectedIndex: selectedIndex,
-                  onDestinationSelected: (value) =>
-                      setState(() => _index = value),
-                  labelType: NavigationRailLabelType.all,
-                  destinations: destinations
-                      .map((item) => NavigationRailDestination(
-                            icon: item.icon,
-                            selectedIcon: item.selectedIcon,
-                            label: Text(item.label),
-                          ))
-                      .toList(),
+              child: LayoutBuilder(
+                builder: (context, constraints) => SingleChildScrollView(
+                  child: ConstrainedBox(
+                    constraints:
+                        BoxConstraints(minHeight: constraints.maxHeight),
+                    child: NavigationRail(
+                      selectedIndex: selectedIndex,
+                      onDestinationSelected: (value) =>
+                          setState(() => _index = value),
+                      labelType: NavigationRailLabelType.all,
+                      destinations: destinations
+                          .map((item) => NavigationRailDestination(
+                                icon: item.icon,
+                                selectedIcon: item.selectedIcon,
+                                label: Text(item.label),
+                              ))
+                          .toList(),
+                    ),
+                  ),
                 ),
               ),
             ),
