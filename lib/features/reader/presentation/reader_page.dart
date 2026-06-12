@@ -25,17 +25,6 @@ class ReaderPage extends ConsumerStatefulWidget {
 }
 
 class _ReaderPageState extends ConsumerState<ReaderPage> {
-  static const _readerFontFamily = 'Microsoft YaHei UI';
-  static const _readerFontFallback = [
-    'Microsoft YaHei',
-    'PingFang SC',
-    'Noto Sans CJK SC',
-    'Noto Sans SC',
-    'Source Han Sans SC',
-    'Segoe UI',
-    'Roboto',
-  ];
-
   final _scrollController = ScrollController();
   final _highlights = <String>[];
   bool _initialPositionApplied = false;
@@ -332,8 +321,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                               maxWidth: settings.readerWidth.toDouble()),
                           child: DefaultTextStyle.merge(
                             style: TextStyle(
-                              fontFamily: _readerFontFamily,
-                              fontFamilyFallback: _readerFontFallback,
                               height: 1.62,
                               letterSpacing: 0,
                               color: Theme.of(context).colorScheme.onSurface,
@@ -347,8 +334,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                       .textTheme
                                       .headlineSmall
                                       ?.copyWith(
-                                        fontFamily: _readerFontFamily,
-                                        fontFamilyFallback: _readerFontFallback,
                                         fontWeight: FontWeight.w700,
                                         height: 1.3,
                                         letterSpacing: 0,
@@ -361,8 +346,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                       .textTheme
                                       .bodySmall
                                       ?.copyWith(
-                                        fontFamily: _readerFontFamily,
-                                        fontFamilyFallback: _readerFontFallback,
                                         height: 1.4,
                                       ),
                                 ),
@@ -388,9 +371,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                       child: Text(
                                         item.aiSummary!,
                                         style: TextStyle(
-                                          fontFamily: _readerFontFamily,
-                                          fontFamilyFallback:
-                                              _readerFontFallback,
                                           height: 1.58,
                                           letterSpacing: 0,
                                         ),
@@ -436,8 +416,6 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                       _openArticleLink(context, url),
                                   style: {
                                     'body': Style(
-                                      fontFamily: _readerFontFamily,
-                                      fontFamilyFallback: _readerFontFallback,
                                       fontSize: FontSize(fontSize),
                                       lineHeight:
                                           LineHeight(settings.readerLineHeight),
@@ -457,20 +435,14 @@ class _ReaderPageState extends ConsumerState<ReaderPage> {
                                       lineHeight: const LineHeight(1.62),
                                     ),
                                     'h1': Style(
-                                      fontFamily: _readerFontFamily,
-                                      fontFamilyFallback: _readerFontFallback,
                                       lineHeight: const LineHeight(1.28),
                                       margin: Margins.only(top: 10, bottom: 12),
                                     ),
                                     'h2': Style(
-                                      fontFamily: _readerFontFamily,
-                                      fontFamilyFallback: _readerFontFallback,
                                       lineHeight: const LineHeight(1.32),
                                       margin: Margins.only(top: 10, bottom: 10),
                                     ),
                                     'h3': Style(
-                                      fontFamily: _readerFontFamily,
-                                      fontFamilyFallback: _readerFontFallback,
                                       lineHeight: const LineHeight(1.36),
                                       margin: Margins.only(top: 8, bottom: 8),
                                     ),

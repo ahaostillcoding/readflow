@@ -23,7 +23,7 @@ class SearchPage extends ConsumerWidget {
         actions: [
           IconButton(
             tooltip: t.filter,
-            icon: const Icon(Icons.tune),
+            icon: const Icon(Icons.tune_rounded),
             onPressed: () => _showSearchFilterSheet(context, ref, filter),
           ),
         ],
@@ -31,11 +31,11 @@ class SearchPage extends ConsumerWidget {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            padding: const EdgeInsets.fromLTRB(18, 12, 18, 10),
             child: TextField(
               autofocus: true,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search_rounded),
                 hintText: t.searchAllLocalContent,
               ),
               onChanged: (query) {

@@ -297,6 +297,9 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
+          Text(t.contentManagement,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
           Card(
             child: Column(
               children: [
@@ -323,6 +326,9 @@ class SettingsPage extends ConsumerWidget {
             ),
           ),
           const SizedBox(height: 20),
+          Text(t.dataManagement,
+              style: Theme.of(context).textTheme.titleMedium),
+          const SizedBox(height: 8),
           Card(
             child: Column(
               children: [

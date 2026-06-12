@@ -37,7 +37,7 @@ class ContentFlowPage extends ConsumerWidget {
           if (fixedCategory == null)
             IconButton(
               tooltip: t.filter,
-              icon: const Icon(Icons.tune),
+              icon: const Icon(Icons.tune_rounded),
               onPressed: () => _showEntryFilterSheet(
                 context,
                 ref,
@@ -47,7 +47,7 @@ class ContentFlowPage extends ConsumerWidget {
             ),
           IconButton(
             tooltip: t.refreshAll,
-            icon: const Icon(Icons.refresh),
+            icon: const Icon(Icons.refresh_rounded),
             onPressed: () async {
               final results =
                   await ref.read(feedsControllerProvider.notifier).refreshAll();
@@ -61,10 +61,10 @@ class ContentFlowPage extends ConsumerWidget {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            padding: const EdgeInsets.fromLTRB(18, 8, 18, 10),
             child: TextField(
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: const Icon(Icons.search_rounded),
                 hintText: t.searchHomeHint,
               ),
               onChanged: (value) {
@@ -287,9 +287,9 @@ class _EntryListView extends ConsumerWidget {
     final settings = ref.watch(settingsControllerProvider);
     return ListView.separated(
       padding: EdgeInsets.all(switch (settings.listDensity) {
-        ListDensity.compact => 8,
-        ListDensity.comfortable => 16,
-        ListDensity.spacious => 20,
+        ListDensity.compact => 10,
+        ListDensity.comfortable => 18,
+        ListDensity.spacious => 22,
       }),
       itemCount: entries.length,
       itemBuilder: (context, index) => EntryTile(entry: entries[index]),
@@ -325,136 +325,160 @@ class EntryTile extends ConsumerWidget {
       ListDensity.spacious => 16.0,
     };
     final subtitle =
-        '${entry.sourceName} | ${t.categoryLabel(entry.category)} | ${formatShortDate(entry.publishedAt ?? entry.fetchedAt)}';
+        '${entry.sourceName} · ${t.categoryLabel(entry.category)} · ${formatShortDate(entry.publishedAt ?? entry.fetchedAt)}';
 
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(8),
-        onTap: () {
-          Navigator.of(context).push(
-              MaterialPageRoute(builder: (_) => ReaderPage(entryId: entry.id)));
-        },
-        child: Padding(
-          padding: EdgeInsets.all(cardPadding),
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (settings.showEntryImages && entry.imageUrl != null)
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(6),
-                  child: Image.network(
-                    entry.imageUrl!,
-                    width: imageSize,
-                    height: imageSize,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) =>
-                        SizedBox(width: imageSize, height: imageSize),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surface,
+        border: Border.all(
+          color: theme.colorScheme.outlineVariant.withValues(alpha: 0.75),
+        ),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(10),
+          onTap: () {
+            Navigator.of(context).push(MaterialPageRoute(
+                builder: (_) => ReaderPage(entryId: entry.id)));
+          },
+          child: Padding(
+            padding: EdgeInsets.all(cardPadding),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (settings.showEntryImages && entry.imageUrl != null)
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      entry.imageUrl!,
+                      width: imageSize,
+                      height: imageSize,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) =>
+                          SizedBox(width: imageSize, height: imageSize),
+                    ),
+                  ),
+                if (settings.showEntryImages && entry.imageUrl != null)
+                  const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        entry.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight:
+                              entry.isRead ? FontWeight.w500 : FontWeight.w700,
+                          fontSize: 15.5,
+                          height: 1.34,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          )),
+                      if (settings.showEntrySummaries &&
+                          (entry.aiSummary?.isNotEmpty ?? false)) ...[
+                        const SizedBox(height: 6),
+                        Text(entry.aiSummary!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            )),
+                      ] else if (settings.showEntrySummaries &&
+                          (entry.summary?.isNotEmpty ?? false)) ...[
+                        const SizedBox(height: 6),
+                        Text(entry.summary!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurfaceVariant,
+                            )),
+                      ],
+                      if (entry.readingProgress > 0 &&
+                          entry.readingProgress < 1) ...[
+                        const SizedBox(height: 8),
+                        LinearProgressIndicator(value: entry.readingProgress),
+                      ],
+                    ],
                   ),
                 ),
-              if (settings.showEntryImages && entry.imageUrl != null)
-                const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                Column(
                   children: [
-                    Text(
-                      entry.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: theme.textTheme.titleMedium?.copyWith(
-                        fontWeight:
-                            entry.isRead ? FontWeight.w500 : FontWeight.w700,
-                      ),
+                    IconButton(
+                      tooltip: entry.isFavorite ? t.removeFavorite : t.favorite,
+                      icon: Icon(entry.isFavorite
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded),
+                      onPressed: () async {
+                        await ref
+                            .read(entryRepositoryProvider)
+                            .setFavorite(entry.id, !entry.isFavorite);
+                        ref.invalidate(entriesProvider);
+                        ref.invalidate(favoriteEntriesProvider);
+                        ref.invalidate(recommendedEntriesProvider);
+                      },
                     ),
-                    const SizedBox(height: 6),
-                    Text(subtitle,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: theme.textTheme.bodySmall),
-                    if (settings.showEntrySummaries &&
-                        (entry.aiSummary?.isNotEmpty ?? false)) ...[
-                      const SizedBox(height: 6),
-                      Text(entry.aiSummary!,
-                          maxLines: 2, overflow: TextOverflow.ellipsis),
-                    ] else if (settings.showEntrySummaries &&
-                        (entry.summary?.isNotEmpty ?? false)) ...[
-                      const SizedBox(height: 6),
-                      Text(entry.summary!,
-                          maxLines: 2, overflow: TextOverflow.ellipsis),
-                    ],
-                    if (entry.readingProgress > 0 &&
-                        entry.readingProgress < 1) ...[
-                      const SizedBox(height: 8),
-                      LinearProgressIndicator(value: entry.readingProgress),
-                    ],
+                    PopupMenuButton<String>(
+                      tooltip: t.moreActions,
+                      icon: const Icon(Icons.more_vert_rounded),
+                      onSelected: (value) async {
+                        if (value == 'later') {
+                          await ref
+                              .read(entryRepositoryProvider)
+                              .setLater(entry.id, !entry.isLater);
+                          ref.invalidate(entriesProvider);
+                          ref.invalidate(laterEntriesProvider);
+                          ref.invalidate(recommendedEntriesProvider);
+                        }
+                        if (value == 'read') {
+                          await ref
+                              .read(entryRepositoryProvider)
+                              .markRead(entry.id, !entry.isRead);
+                          ref.invalidate(entriesProvider);
+                        }
+                        if (value == 'copy') {
+                          await Clipboard.setData(
+                              ClipboardData(text: entry.link));
+                          if (context.mounted) {
+                            showMessage(context, context.t.linkCopied);
+                          }
+                        }
+                        if (value == 'open') {
+                          final uri = Uri.tryParse(entry.link);
+                          if (uri != null) {
+                            await launchUrl(uri,
+                                mode: LaunchMode.externalApplication);
+                          }
+                        }
+                      },
+                      itemBuilder: (context) => [
+                        PopupMenuItem(
+                          value: 'later',
+                          child:
+                              Text(entry.isLater ? t.removeLater : t.readLater),
+                        ),
+                        PopupMenuItem(
+                          value: 'read',
+                          child: Text(entry.isRead ? t.markUnread : t.markRead),
+                        ),
+                        PopupMenuItem(value: 'copy', child: Text(t.copyLink)),
+                        PopupMenuItem(
+                            value: 'open', child: Text(t.openInBrowser)),
+                      ],
+                    ),
                   ],
                 ),
-              ),
-              Column(
-                children: [
-                  IconButton(
-                    tooltip: entry.isFavorite ? t.removeFavorite : t.favorite,
-                    icon:
-                        Icon(entry.isFavorite ? Icons.star : Icons.star_border),
-                    onPressed: () async {
-                      await ref
-                          .read(entryRepositoryProvider)
-                          .setFavorite(entry.id, !entry.isFavorite);
-                      ref.invalidate(entriesProvider);
-                      ref.invalidate(favoriteEntriesProvider);
-                      ref.invalidate(recommendedEntriesProvider);
-                    },
-                  ),
-                  PopupMenuButton<String>(
-                    tooltip: t.moreActions,
-                    onSelected: (value) async {
-                      if (value == 'later') {
-                        await ref
-                            .read(entryRepositoryProvider)
-                            .setLater(entry.id, !entry.isLater);
-                        ref.invalidate(entriesProvider);
-                        ref.invalidate(laterEntriesProvider);
-                        ref.invalidate(recommendedEntriesProvider);
-                      }
-                      if (value == 'read') {
-                        await ref
-                            .read(entryRepositoryProvider)
-                            .markRead(entry.id, !entry.isRead);
-                        ref.invalidate(entriesProvider);
-                      }
-                      if (value == 'copy') {
-                        await Clipboard.setData(
-                            ClipboardData(text: entry.link));
-                        if (context.mounted) {
-                          showMessage(context, context.t.linkCopied);
-                        }
-                      }
-                      if (value == 'open') {
-                        final uri = Uri.tryParse(entry.link);
-                        if (uri != null) {
-                          await launchUrl(uri,
-                              mode: LaunchMode.externalApplication);
-                        }
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem(
-                        value: 'later',
-                        child:
-                            Text(entry.isLater ? t.removeLater : t.readLater),
-                      ),
-                      PopupMenuItem(
-                        value: 'read',
-                        child: Text(entry.isRead ? t.markUnread : t.markRead),
-                      ),
-                      PopupMenuItem(value: 'copy', child: Text(t.copyLink)),
-                      PopupMenuItem(
-                          value: 'open', child: Text(t.openInBrowser)),
-                    ],
-                  ),
-                ],
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

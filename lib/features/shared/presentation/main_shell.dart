@@ -207,10 +207,10 @@ class _SidebarList extends StatelessWidget {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     return Material(
-      color: colorScheme.surface,
+      color: colorScheme.surfaceContainerLow,
       child: SafeArea(
         child: ListView.separated(
-          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 6),
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 8),
           itemCount: destinations.length,
           separatorBuilder: (_, __) => const SizedBox(height: 4),
           itemBuilder: (context, index) {
@@ -224,14 +224,14 @@ class _SidebarList extends StatelessWidget {
                 onTap: () => onSelected(index),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 160),
-                  height: 58,
+                  height: 56,
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                      const EdgeInsets.symmetric(horizontal: 5, vertical: 5),
                   decoration: BoxDecoration(
                     color: selected
-                        ? colorScheme.secondaryContainer
+                        ? colorScheme.primaryContainer
                         : Colors.transparent,
-                    borderRadius: BorderRadius.circular(8),
+                    borderRadius: BorderRadius.circular(9),
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -240,7 +240,7 @@ class _SidebarList extends StatelessWidget {
                         data: IconThemeData(
                           size: 22,
                           color: selected
-                              ? colorScheme.onSecondaryContainer
+                              ? colorScheme.onPrimaryContainer
                               : colorScheme.onSurfaceVariant,
                         ),
                         child: selected
@@ -255,7 +255,7 @@ class _SidebarList extends StatelessWidget {
                         textAlign: TextAlign.center,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: selected
-                                  ? colorScheme.onSecondaryContainer
+                                  ? colorScheme.onPrimaryContainer
                                   : colorScheme.onSurfaceVariant,
                               fontWeight:
                                   selected ? FontWeight.w700 : FontWeight.w500,
